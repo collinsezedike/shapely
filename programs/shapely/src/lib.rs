@@ -15,7 +15,7 @@ declare_id!("9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX");
 pub mod shapely {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn initialize(ctx: Context<Initialize>, seed: u64, fee: u16) -> Result<()> {
+        ctx.accounts.initialize(seed, fee, &ctx.bumps)
     }
 }
