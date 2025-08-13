@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-use mpl_core::{ accounts::BaseCollectionV1, instructions::CreateV2CpiBuilder, ID as MPL_CORE_ID };
-
-use mpl_core::{ instructions::CreateV1CpiBuilder, types::DataState };
+use mpl_core::{ instructions::CreateV2CpiBuilder, ID as MPL_CORE_ID };
 
 use crate::state::Config;
 
@@ -13,9 +11,9 @@ pub struct MintAccessory<'info> {
     #[account(mut)]
     pub accessory: Signer<'info>,
 
-    /// CHECK: This is the accessory collection will be checked by the Metaplex Core program
+    /// CHECK: This is the accessory collection and will be checked by the Metaplex Core program
     #[account(mut)]
-    // pub accessory_collection: Option<Account<'info, BaseCollectionV1>>, // This doesn't work Error: Anchor cannot serialize, deserialize...
+    // pub accessory_collection: Option<Account<'info, BaseCollectionV1>>, // This doesn't work. Error: Anchor cannot serialize, deserialize...
     pub accessory_collection: UncheckedAccount<'info>,
 
     #[account(seeds = [b"config", config.seed.to_le_bytes().as_ref()], bump = config.bump)]
