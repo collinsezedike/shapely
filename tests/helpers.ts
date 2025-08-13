@@ -3,6 +3,12 @@ import {
 	getAddressEncoder,
 	createSolanaClient,
 	getProgramDerivedAddress,
+	createTransaction,
+	TransactionSigner,
+	Instruction,
+	signTransactionMessageWithSigners,
+	getExplorerLink,
+	getSignatureFromTransaction,
 } from "gill";
 
 const addressEncoder = getAddressEncoder();
@@ -12,6 +18,34 @@ export function getSolanaClient() {
 		urlOrMoniker: "devnet",
 	});
 	return { rpc, sendAndConfirmTransaction };
+}
+
+export async function submitTransaction(
+	payer: TransactionSigner,
+	ixn: Instruction
+) {
+	const { value: latestBlockhash } = await getSolanaClient()
+		.rpc.getLatestBlockhash()
+		.send();
+
+	const tx = createTransaction({
+		feePayer: payer,
+		version: "legacy",
+		instructions: [ixn],
+		latestBlockhash,
+	});
+
+	const signedTransaction = await signTransactionMessageWithSigners(tx);
+
+	console.log(
+		"Explorer:",
+		getExplorerLink({
+			cluster: "devnet",
+			transaction: getSignatureFromTransaction(signedTransaction),
+		})
+	);
+
+	await getSolanaClient().sendAndConfirmTransaction(signedTransaction);
 }
 
 export async function getConfigPDA(
