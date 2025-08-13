@@ -17,12 +17,10 @@ import { getInitializeInstruction } from "../client/ts";
 
 import {
 	generateAndAirdropKeypairSigner,
-	getCollectionPDA,
 	getConfigPDA,
 	getSolanaClient,
 	getTreasuryPDA,
 } from "./helpers";
-import { generateKeyPair } from "node:crypto";
 
 type initializeParams = Parameters<typeof getInitializeInstruction>[0];
 
@@ -32,11 +30,9 @@ describe("Shapely", () => {
 		"CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
 	);
 
-	let marketMaker: KeyPairSigner;
-	// let avatarCollection: KeyPairSigner;
-	// let accessoryCollection: KeyPairSigner;
-	let avatarCollection: Address;
-	let accessoryCollection: Address;
+	let payer: KeyPairSigner;
+	let avatarCollection: KeyPairSigner;
+	let accessoryCollection: KeyPairSigner;
 	let config: Address;
 	let treasury: Address;
 
@@ -44,15 +40,9 @@ describe("Shapely", () => {
 	let fee = 150; // 1.5%
 
 	before(async () => {
-		marketMaker = await generateAndAirdropKeypairSigner();
-		// avatarCollection = await generateKeyPairSigner();
-		// accessoryCollection = await generateKeyPairSigner();
-		avatarCollection = await getCollectionPDA("avatar", PROGRAM_ID, config);
-		accessoryCollection = await getCollectionPDA(
-			"accessory",
-			PROGRAM_ID,
-			config
-		);
+		payer = await generateAndAirdropKeypairSigner();
+		avatarCollection = await generateKeyPairSigner();
+		accessoryCollection = await generateKeyPairSigner();
 
 		config = await getConfigPDA(PROGRAM_ID, configSeed);
 		treasury = await getTreasuryPDA(PROGRAM_ID, config);
@@ -62,7 +52,7 @@ describe("Shapely", () => {
 		const params: initializeParams = {
 			seed: configSeed,
 			fee,
-			marketMaker,
+			payer,
 			accessoryCollection,
 			avatarCollection,
 			config,
@@ -78,7 +68,7 @@ describe("Shapely", () => {
 			.send();
 
 		const tx = createTransaction({
-			feePayer: marketMaker,
+			feePayer: payer,
 			version: "legacy",
 			instructions: [ixn],
 			latestBlockhash,

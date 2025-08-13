@@ -8,10 +8,6 @@ skip-lint = false
 [programs.localnet]
 shapely = "9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX"
 
-[[test.genesis]]
-address = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
-program = "target/core.so"
-
 [registry]
 url = "https://api.apr.dev"
 
@@ -20,4 +16,4 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn tsx --test tests/**/*.ts"
+test = "yarn tsx --test tests/*.ts"

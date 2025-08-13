@@ -3,6 +3,7 @@ import {
 	getAddressEncoder,
 	createSolanaClient,
 	generateKeyPairSigner,
+	getExplorerLink,
 	getProgramDerivedAddress,
 	KeyPairSigner,
 	lamports,
@@ -21,12 +22,21 @@ export function getSolanaClient() {
 export async function generateAndAirdropKeypairSigner(): Promise<KeyPairSigner> {
 	const keypair = await generateKeyPairSigner();
 
-	await getSolanaClient()
+	const sig = await getSolanaClient()
 		.rpc.requestAirdrop(
 			keypair.address,
 			lamports(BigInt(5 * LAMPORTS_PER_SOL))
 		)
 		.send();
+
+	// Wait 2 seconds for the transaction to be fulfilled?
+	await new Promise((resolve) => setTimeout(resolve, 2000));
+
+	// console.log("Airdrop Explorer:", getExplorerLink({ cluster: "localnet", transaction: sig }));
+
+	const kpBalance = (await getSolanaClient().rpc.getBalance(keypair.address).send());
+
+	console.log("Keypair balance:", kpBalance)
 
 	return keypair;
 }
@@ -56,17 +66,4 @@ export async function getTreasuryPDA(
 	});
 
 	return treasury;
-}
-
-export async function getCollectionPDA(
-	collection: string,
-	programAddress: Address,
-	config: Address
-): Promise<Address> {
-	const [collectionPDA] = await getProgramDerivedAddress({
-		programAddress,
-		seeds: [`${collection} collection`, addressEncoder.encode(config)],
-	});
-
-	return collectionPDA;
 }
