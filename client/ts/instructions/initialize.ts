@@ -10,6 +10,7 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -37,6 +38,7 @@ import {
 } from '@solana/kit';
 import { SHAPELY_PROGRAM_ADDRESS } from '../programs';
 import {
+  expectAddress,
   expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
@@ -232,6 +234,7 @@ export async function getInitializeInstructionAsync<
         getBytesEncoder().encode(
           new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
         ),
+        getAddressEncoder().encode(expectAddress(accounts.config.value)),
       ],
     });
   }
