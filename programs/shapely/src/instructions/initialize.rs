@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-use mpl_core::{
-    accounts::BaseCollectionV1, instructions::CreateCollectionV1CpiBuilder, ID as MPL_CORE_ID,
-};
+use mpl_core::{instructions::CreateCollectionV1CpiBuilder, ID as MPL_CORE_ID};
 
 use crate::state::Config;
 
@@ -38,7 +36,6 @@ pub struct Initialize<'info> {
 
 impl<'info> Initialize<'info> {
     pub fn initialize(&mut self, seed: u64, fee: u16, bumps: &InitializeBumps) -> Result<()> {
-
         self.initialize_config(seed, fee, bumps)?;
 
         self.mint_avatar_collection()?;
