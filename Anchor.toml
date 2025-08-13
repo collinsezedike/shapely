@@ -12,7 +12,7 @@ shapely = "9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

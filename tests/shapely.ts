@@ -3,6 +3,7 @@ import assert from "node:assert";
 import {
 	address,
 	Address,
+	createKeyPairSignerFromBytes,
 	createTransaction,
 	generateKeyPairSigner,
 	getExplorerLink,
@@ -15,12 +16,8 @@ import { SYSTEM_PROGRAM_ADDRESS } from "gill/programs";
 import * as programClient from "../client/ts";
 import { getInitializeInstruction } from "../client/ts";
 
-import {
-	generateAndAirdropKeypairSigner,
-	getConfigPDA,
-	getSolanaClient,
-	getTreasuryPDA,
-} from "./helpers";
+import { getConfigPDA, getSolanaClient, getTreasuryPDA } from "./helpers";
+import wallet from "../test-wallet.json";
 
 type initializeParams = Parameters<typeof getInitializeInstruction>[0];
 
@@ -40,7 +37,7 @@ describe("Shapely", () => {
 	let fee = 150; // 1.5%
 
 	before(async () => {
-		payer = await generateAndAirdropKeypairSigner();
+		payer = await createKeyPairSignerFromBytes(Uint8Array.from(wallet));
 		avatarCollection = await generateKeyPairSigner();
 		accessoryCollection = await generateKeyPairSigner();
 
@@ -79,7 +76,7 @@ describe("Shapely", () => {
 		console.log(
 			"Explorer:",
 			getExplorerLink({
-				cluster: "localnet",
+				cluster: "devnet",
 				transaction: getSignatureFromTransaction(signedTransaction),
 			})
 		);
