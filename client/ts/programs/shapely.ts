@@ -13,7 +13,10 @@ import {
   type Address,
   type ReadonlyUint8Array,
 } from '@solana/kit';
-import { type ParsedInitializeInstruction } from '../instructions';
+import {
+  type ParsedInitializeInstruction,
+  type ParsedMintAccessoryInstruction,
+} from '../instructions';
 
 export const SHAPELY_PROGRAM_ADDRESS =
   '9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX' as Address<'9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX'>;
@@ -44,6 +47,7 @@ export function identifyShapelyAccount(
 
 export enum ShapelyInstruction {
   Initialize,
+  MintAccessory,
 }
 
 export function identifyShapelyInstruction(
@@ -61,6 +65,17 @@ export function identifyShapelyInstruction(
   ) {
     return ShapelyInstruction.Initialize;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([150, 125, 100, 91, 199, 165, 77, 225])
+      ),
+      0
+    )
+  ) {
+    return ShapelyInstruction.MintAccessory;
+  }
   throw new Error(
     'The provided instruction could not be identified as a shapely instruction.'
   );
@@ -68,6 +83,10 @@ export function identifyShapelyInstruction(
 
 export type ParsedShapelyInstruction<
   TProgram extends string = '9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX',
-> = {
-  instructionType: ShapelyInstruction.Initialize;
-} & ParsedInitializeInstruction<TProgram>;
+> =
+  | ({
+      instructionType: ShapelyInstruction.Initialize;
+    } & ParsedInitializeInstruction<TProgram>)
+  | ({
+      instructionType: ShapelyInstruction.MintAccessory;
+    } & ParsedMintAccessoryInstruction<TProgram>);

@@ -3,26 +3,23 @@ import assert from "node:assert";
 import {
 	address,
 	Address,
-	createTransaction,
+	createKeyPairSignerFromBytes,
 	generateKeyPairSigner,
-	getExplorerLink,
-	getSignatureFromTransaction,
 	KeyPairSigner,
-	signTransactionMessageWithSigners,
 } from "gill";
 import { SYSTEM_PROGRAM_ADDRESS } from "gill/programs";
 
 import * as programClient from "../client/ts";
-import { getInitializeInstruction } from "../client/ts";
-
 import {
-	generateAndAirdropKeypairSigner,
-	getConfigPDA,
-	getSolanaClient,
-	getTreasuryPDA,
-} from "./helpers";
+	getInitializeInstruction,
+	getMintAccessoryInstruction,
+} from "../client/ts";
+
+import { getConfigPDA, getTreasuryPDA, submitTransaction } from "./helpers";
+import wallet from "../test-wallet.json";
 
 type initializeParams = Parameters<typeof getInitializeInstruction>[0];
+type mintAccessoryParams = Parameters<typeof getMintAccessoryInstruction>[0];
 
 describe("Shapely", () => {
 	const PROGRAM_ID = programClient.SHAPELY_PROGRAM_ADDRESS;
@@ -31,8 +28,10 @@ describe("Shapely", () => {
 	);
 
 	let payer: KeyPairSigner;
+	let artist: KeyPairSigner;
 	let avatarCollection: KeyPairSigner;
 	let accessoryCollection: KeyPairSigner;
+	let accessory: KeyPairSigner;
 	let config: Address;
 	let treasury: Address;
 
@@ -40,9 +39,11 @@ describe("Shapely", () => {
 	let fee = 150; // 1.5%
 
 	before(async () => {
-		payer = await generateAndAirdropKeypairSigner();
+		payer = await createKeyPairSignerFromBytes(Uint8Array.from(wallet));
+		artist = await createKeyPairSignerFromBytes(Uint8Array.from(wallet));
 		avatarCollection = await generateKeyPairSigner();
 		accessoryCollection = await generateKeyPairSigner();
+		accessory = await generateKeyPairSigner();
 
 		config = await getConfigPDA(PROGRAM_ID, configSeed);
 		treasury = await getTreasuryPDA(PROGRAM_ID, config);
@@ -50,8 +51,10 @@ describe("Shapely", () => {
 
 	it("Should initialize the collection mints", async () => {
 		const params: initializeParams = {
+			// Arguments
 			seed: configSeed,
 			fee,
+			// Accounts
 			payer,
 			accessoryCollection,
 			avatarCollection,
@@ -63,27 +66,25 @@ describe("Shapely", () => {
 
 		const ixn = getInitializeInstruction(params);
 
-		const { value: latestBlockhash } = await getSolanaClient()
-			.rpc.getLatestBlockhash()
-			.send();
+		await submitTransaction(payer, ixn);
+	});
 
-		const tx = createTransaction({
-			feePayer: payer,
-			version: "legacy",
-			instructions: [ixn],
-			latestBlockhash,
-		});
+	it("Should mint a new accessory NFT", async () => {
+		const params: mintAccessoryParams = {
+			// Arguments
+			name: "Cyan Leather Jacket",
+			uri: "https://www.jsonkeeper.com/b/QOVHK",
+			// Accounts
+			artist,
+			accessory,
+			config,
+			accessoryCollection: accessoryCollection.address,
+			systemProgram: SYSTEM_PROGRAM_ADDRESS,
+			mplCoreProgram: MPL_PROGRAM_ID,
+		};
 
-		const signedTransaction = await signTransactionMessageWithSigners(tx);
+		const ixn = getMintAccessoryInstruction(params);
 
-		console.log(
-			"Explorer:",
-			getExplorerLink({
-				cluster: "localnet",
-				transaction: getSignatureFromTransaction(signedTransaction),
-			})
-		);
-
-		await getSolanaClient().sendAndConfirmTransaction(signedTransaction);
+		await submitTransaction(artist, ixn);
 	});
 });

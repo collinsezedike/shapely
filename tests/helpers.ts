@@ -2,43 +2,50 @@ import {
 	Address,
 	getAddressEncoder,
 	createSolanaClient,
-	generateKeyPairSigner,
-	getExplorerLink,
 	getProgramDerivedAddress,
-	KeyPairSigner,
-	lamports,
-	LAMPORTS_PER_SOL,
+	createTransaction,
+	TransactionSigner,
+	Instruction,
+	signTransactionMessageWithSigners,
+	getExplorerLink,
+	getSignatureFromTransaction,
 } from "gill";
 
 const addressEncoder = getAddressEncoder();
 
 export function getSolanaClient() {
 	const { rpc, sendAndConfirmTransaction } = createSolanaClient({
-		urlOrMoniker: "localnet",
+		urlOrMoniker: "devnet",
 	});
 	return { rpc, sendAndConfirmTransaction };
 }
 
-export async function generateAndAirdropKeypairSigner(): Promise<KeyPairSigner> {
-	const keypair = await generateKeyPairSigner();
-
-	const sig = await getSolanaClient()
-		.rpc.requestAirdrop(
-			keypair.address,
-			lamports(BigInt(5 * LAMPORTS_PER_SOL))
-		)
+export async function submitTransaction(
+	payer: TransactionSigner,
+	ixn: Instruction
+) {
+	const { value: latestBlockhash } = await getSolanaClient()
+		.rpc.getLatestBlockhash()
 		.send();
 
-	// Wait 2 seconds for the transaction to be fulfilled?
-	await new Promise((resolve) => setTimeout(resolve, 2000));
+	const tx = createTransaction({
+		feePayer: payer,
+		version: "legacy",
+		instructions: [ixn],
+		latestBlockhash,
+	});
 
-	// console.log("Airdrop Explorer:", getExplorerLink({ cluster: "localnet", transaction: sig }));
+	const signedTransaction = await signTransactionMessageWithSigners(tx);
 
-	const kpBalance = (await getSolanaClient().rpc.getBalance(keypair.address).send());
+	console.log(
+		"Explorer:",
+		getExplorerLink({
+			cluster: "devnet",
+			transaction: getSignatureFromTransaction(signedTransaction),
+		})
+	);
 
-	console.log("Keypair balance:", kpBalance)
-
-	return keypair;
+	await getSolanaClient().sendAndConfirmTransaction(signedTransaction);
 }
 
 export async function getConfigPDA(

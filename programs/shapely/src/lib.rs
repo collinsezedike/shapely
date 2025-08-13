@@ -18,4 +18,8 @@ pub mod shapely {
     pub fn initialize(ctx: Context<Initialize>, seed: u64, fee: u16) -> Result<()> {
         ctx.accounts.initialize(seed, fee, &ctx.bumps)
     }
+
+    pub fn mint_accessory(ctx: Context<MintAccessory>, name: String, uri: String) -> Result<()> {
+        ctx.accounts.mint_accessory(name, uri)
+    }
 }
