@@ -16,6 +16,7 @@ import {
 import {
   type ParsedInitializeInstruction,
   type ParsedMintAccessoryInstruction,
+  type ParsedMintAvatarInstruction,
 } from '../instructions';
 
 export const SHAPELY_PROGRAM_ADDRESS =
@@ -48,6 +49,7 @@ export function identifyShapelyAccount(
 export enum ShapelyInstruction {
   Initialize,
   MintAccessory,
+  MintAvatar,
 }
 
 export function identifyShapelyInstruction(
@@ -76,6 +78,17 @@ export function identifyShapelyInstruction(
   ) {
     return ShapelyInstruction.MintAccessory;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([19, 60, 175, 155, 163, 211, 181, 93])
+      ),
+      0
+    )
+  ) {
+    return ShapelyInstruction.MintAvatar;
+  }
   throw new Error(
     'The provided instruction could not be identified as a shapely instruction.'
   );
@@ -89,4 +102,7 @@ export type ParsedShapelyInstruction<
     } & ParsedInitializeInstruction<TProgram>)
   | ({
       instructionType: ShapelyInstruction.MintAccessory;
-    } & ParsedMintAccessoryInstruction<TProgram>);
+    } & ParsedMintAccessoryInstruction<TProgram>)
+  | ({
+      instructionType: ShapelyInstruction.MintAvatar;
+    } & ParsedMintAvatarInstruction<TProgram>);

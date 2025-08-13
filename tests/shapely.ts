@@ -13,13 +13,16 @@ import * as programClient from "../client/ts";
 import {
 	getInitializeInstruction,
 	getMintAccessoryInstruction,
+	getMintAvatarInstruction,
 } from "../client/ts";
 
 import { getConfigPDA, getTreasuryPDA, submitTransaction } from "./helpers";
 import wallet from "../test-wallet.json";
+import { loadKeypairSignerFromFile } from "gill/node";
 
 type initializeParams = Parameters<typeof getInitializeInstruction>[0];
 type mintAccessoryParams = Parameters<typeof getMintAccessoryInstruction>[0];
+type mintAvatarParams = Parameters<typeof getMintAvatarInstruction>[0];
 
 describe("Shapely", () => {
 	const PROGRAM_ID = programClient.SHAPELY_PROGRAM_ADDRESS;
@@ -29,9 +32,11 @@ describe("Shapely", () => {
 
 	let payer: KeyPairSigner;
 	let artist: KeyPairSigner;
+	let collector: KeyPairSigner;
 	let avatarCollection: KeyPairSigner;
 	let accessoryCollection: KeyPairSigner;
 	let accessory: KeyPairSigner;
+	let avatar: KeyPairSigner;
 	let config: Address;
 	let treasury: Address;
 
@@ -41,10 +46,11 @@ describe("Shapely", () => {
 	before(async () => {
 		payer = await createKeyPairSignerFromBytes(Uint8Array.from(wallet));
 		artist = await createKeyPairSignerFromBytes(Uint8Array.from(wallet));
+		collector = await loadKeypairSignerFromFile();
 		avatarCollection = await generateKeyPairSigner();
 		accessoryCollection = await generateKeyPairSigner();
 		accessory = await generateKeyPairSigner();
-
+		avatar = await generateKeyPairSigner();
 		config = await getConfigPDA(PROGRAM_ID, configSeed);
 		treasury = await getTreasuryPDA(PROGRAM_ID, config);
 	});
@@ -84,6 +90,25 @@ describe("Shapely", () => {
 		};
 
 		const ixn = getMintAccessoryInstruction(params);
+
+		await submitTransaction(artist, ixn);
+	});
+
+	it("Should mint a new avatar NFT", async () => {
+		const params: mintAvatarParams = {
+			// Arguments
+			name: "collinsezedike",
+			uri: "https://www.jsonkeeper.com/b/98WJO",
+			// Accounts
+			collector,
+			avatar,
+			config,
+			avatarCollection: avatarCollection.address,
+			systemProgram: SYSTEM_PROGRAM_ADDRESS,
+			mplCoreProgram: MPL_PROGRAM_ID,
+		};
+
+		const ixn = getMintAvatarInstruction(params);
 
 		await submitTransaction(artist, ixn);
 	});

@@ -8,3 +8,4 @@
 
 export * from './initialize';
 export * from './mintAccessory';
+export * from './mintAvatar';
