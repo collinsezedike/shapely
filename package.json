@@ -5,10 +5,7 @@
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "build": "anchor build && tsx generateCodamaClient.ts"
   },
-  "dependencies": {
-    "gill": "^0.10.3",
-    "rpc-websockets": "^9.1.3"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.2.3",
     "@codama/renderers": "^1.0.29",

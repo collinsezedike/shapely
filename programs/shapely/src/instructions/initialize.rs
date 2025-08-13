@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-use mpl_core::{
-    accounts::BaseCollectionV1, instructions::CreateCollectionV1CpiBuilder, ID as MPL_CORE_ID,
-};
+use mpl_core::{ instructions::CreateCollectionV1CpiBuilder };
 
 use crate::state::Config;
 
@@ -9,7 +7,7 @@ use crate::state::Config;
 #[instruction(seed: u64)]
 pub struct Initialize<'info> {
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub market_maker: Signer<'info>,
 
     #[account(mut)]
     pub avatar_collection: Signer<'info>,
@@ -19,18 +17,18 @@ pub struct Initialize<'info> {
 
     #[account(
         init,
-        payer = payer,
+        payer = market_maker,
         seeds = [b"config", seed.to_le_bytes().as_ref()],
         bump,
         space = Config::SPACE
     )]
     pub config: Account<'info, Config>,
 
-    #[account(seeds = [b"treasury", config.key().as_ref()], bump)]
+    #[account(seeds = [b"treasury"], bump)]
     pub treasury: SystemAccount<'info>,
 
     /// CHECK: This is the Metaplex Core program
-    #[account(address = MPL_CORE_ID)]
+    #[account(address = mpl_core::ID)]
     pub mpl_core_program: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
@@ -38,8 +36,7 @@ pub struct Initialize<'info> {
 
 impl<'info> Initialize<'info> {
     pub fn initialize(&mut self, seed: u64, fee: u16, bumps: &InitializeBumps) -> Result<()> {
-
-        self.initialize_config(seed, fee, bumps)?;
+        self.initialize_config(seed, fee, bumps.config, bumps.treasury)?;
 
         self.mint_avatar_collection()?;
 
@@ -52,11 +49,12 @@ impl<'info> Initialize<'info> {
         &mut self,
         seed: u64,
         fee: u16,
-        bumps: &InitializeBumps,
+        config_bump: u8,
+        treasury_bump: u8
     ) -> Result<()> {
         self.config.set_inner(Config {
-            bump: bumps.config,
-            treasury_bump: bumps.treasury,
+            bump: config_bump,
+            treasury_bump,
             seed,
             fee,
         });
@@ -68,7 +66,7 @@ impl<'info> Initialize<'info> {
         CreateCollectionV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
             .collection(&self.avatar_collection.to_account_info())
             .update_authority(Some(&self.config.to_account_info()))
-            .payer(&self.payer.to_account_info())
+            .payer(&self.market_maker.to_account_info())
             .system_program(&self.system_program.to_account_info())
             .name("Shapely Avatar Collection".to_string())
             .uri("https://github.com/collinsezedike/shapely".to_string())
@@ -81,7 +79,7 @@ impl<'info> Initialize<'info> {
         CreateCollectionV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
             .collection(&self.accessory_collection.to_account_info())
             .update_authority(Some(&self.config.to_account_info()))
-            .payer(&self.payer.to_account_info())
+            .payer(&self.market_maker.to_account_info())
             .system_program(&self.system_program.to_account_info())
             .name("Shapely Accessory Collection".to_string())
             .uri("https://github.com/collinsezedike/shapely".to_string())

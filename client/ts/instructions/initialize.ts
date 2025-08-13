@@ -10,7 +10,6 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -38,7 +37,6 @@ import {
 } from '@solana/kit';
 import { SHAPELY_PROGRAM_ADDRESS } from '../programs';
 import {
-  expectAddress,
   expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
@@ -54,7 +52,7 @@ export function getInitializeDiscriminatorBytes() {
 
 export type InitializeInstruction<
   TProgram extends string = typeof SHAPELY_PROGRAM_ADDRESS,
-  TAccountPayer extends string | AccountMeta<string> = string,
+  TAccountMarketMaker extends string | AccountMeta<string> = string,
   TAccountAvatarCollection extends string | AccountMeta<string> = string,
   TAccountAccessoryCollection extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
@@ -70,10 +68,10 @@ export type InitializeInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountPayer extends string
-        ? WritableSignerAccount<TAccountPayer> &
-            AccountSignerMeta<TAccountPayer>
-        : TAccountPayer,
+      TAccountMarketMaker extends string
+        ? WritableSignerAccount<TAccountMarketMaker> &
+            AccountSignerMeta<TAccountMarketMaker>
+        : TAccountMarketMaker,
       TAccountAvatarCollection extends string
         ? WritableSignerAccount<TAccountAvatarCollection> &
             AccountSignerMeta<TAccountAvatarCollection>
@@ -139,7 +137,7 @@ export function getInitializeInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type InitializeAsyncInput<
-  TAccountPayer extends string = string,
+  TAccountMarketMaker extends string = string,
   TAccountAvatarCollection extends string = string,
   TAccountAccessoryCollection extends string = string,
   TAccountConfig extends string = string,
@@ -147,7 +145,7 @@ export type InitializeAsyncInput<
   TAccountMplCoreProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  payer: TransactionSigner<TAccountPayer>;
+  marketMaker: TransactionSigner<TAccountMarketMaker>;
   avatarCollection: TransactionSigner<TAccountAvatarCollection>;
   accessoryCollection: TransactionSigner<TAccountAccessoryCollection>;
   config?: Address<TAccountConfig>;
@@ -159,7 +157,7 @@ export type InitializeAsyncInput<
 };
 
 export async function getInitializeInstructionAsync<
-  TAccountPayer extends string,
+  TAccountMarketMaker extends string,
   TAccountAvatarCollection extends string,
   TAccountAccessoryCollection extends string,
   TAccountConfig extends string,
@@ -169,7 +167,7 @@ export async function getInitializeInstructionAsync<
   TProgramAddress extends Address = typeof SHAPELY_PROGRAM_ADDRESS,
 >(
   input: InitializeAsyncInput<
-    TAccountPayer,
+    TAccountMarketMaker,
     TAccountAvatarCollection,
     TAccountAccessoryCollection,
     TAccountConfig,
@@ -181,7 +179,7 @@ export async function getInitializeInstructionAsync<
 ): Promise<
   InitializeInstruction<
     TProgramAddress,
-    TAccountPayer,
+    TAccountMarketMaker,
     TAccountAvatarCollection,
     TAccountAccessoryCollection,
     TAccountConfig,
@@ -195,7 +193,7 @@ export async function getInitializeInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    payer: { value: input.payer ?? null, isWritable: true },
+    marketMaker: { value: input.marketMaker ?? null, isWritable: true },
     avatarCollection: {
       value: input.avatarCollection ?? null,
       isWritable: true,
@@ -234,7 +232,6 @@ export async function getInitializeInstructionAsync<
         getBytesEncoder().encode(
           new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
         ),
-        getAddressEncoder().encode(expectAddress(accounts.config.value)),
       ],
     });
   }
@@ -250,7 +247,7 @@ export async function getInitializeInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.marketMaker),
       getAccountMeta(accounts.avatarCollection),
       getAccountMeta(accounts.accessoryCollection),
       getAccountMeta(accounts.config),
@@ -264,7 +261,7 @@ export async function getInitializeInstructionAsync<
     ),
   } as InitializeInstruction<
     TProgramAddress,
-    TAccountPayer,
+    TAccountMarketMaker,
     TAccountAvatarCollection,
     TAccountAccessoryCollection,
     TAccountConfig,
@@ -277,7 +274,7 @@ export async function getInitializeInstructionAsync<
 }
 
 export type InitializeInput<
-  TAccountPayer extends string = string,
+  TAccountMarketMaker extends string = string,
   TAccountAvatarCollection extends string = string,
   TAccountAccessoryCollection extends string = string,
   TAccountConfig extends string = string,
@@ -285,7 +282,7 @@ export type InitializeInput<
   TAccountMplCoreProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  payer: TransactionSigner<TAccountPayer>;
+  marketMaker: TransactionSigner<TAccountMarketMaker>;
   avatarCollection: TransactionSigner<TAccountAvatarCollection>;
   accessoryCollection: TransactionSigner<TAccountAccessoryCollection>;
   config: Address<TAccountConfig>;
@@ -297,7 +294,7 @@ export type InitializeInput<
 };
 
 export function getInitializeInstruction<
-  TAccountPayer extends string,
+  TAccountMarketMaker extends string,
   TAccountAvatarCollection extends string,
   TAccountAccessoryCollection extends string,
   TAccountConfig extends string,
@@ -307,7 +304,7 @@ export function getInitializeInstruction<
   TProgramAddress extends Address = typeof SHAPELY_PROGRAM_ADDRESS,
 >(
   input: InitializeInput<
-    TAccountPayer,
+    TAccountMarketMaker,
     TAccountAvatarCollection,
     TAccountAccessoryCollection,
     TAccountConfig,
@@ -318,7 +315,7 @@ export function getInitializeInstruction<
   config?: { programAddress?: TProgramAddress }
 ): InitializeInstruction<
   TProgramAddress,
-  TAccountPayer,
+  TAccountMarketMaker,
   TAccountAvatarCollection,
   TAccountAccessoryCollection,
   TAccountConfig,
@@ -331,7 +328,7 @@ export function getInitializeInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    payer: { value: input.payer ?? null, isWritable: true },
+    marketMaker: { value: input.marketMaker ?? null, isWritable: true },
     avatarCollection: {
       value: input.avatarCollection ?? null,
       isWritable: true,
@@ -366,7 +363,7 @@ export function getInitializeInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.marketMaker),
       getAccountMeta(accounts.avatarCollection),
       getAccountMeta(accounts.accessoryCollection),
       getAccountMeta(accounts.config),
@@ -380,7 +377,7 @@ export function getInitializeInstruction<
     ),
   } as InitializeInstruction<
     TProgramAddress,
-    TAccountPayer,
+    TAccountMarketMaker,
     TAccountAvatarCollection,
     TAccountAccessoryCollection,
     TAccountConfig,
@@ -398,7 +395,7 @@ export type ParsedInitializeInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    payer: TAccountMetas[0];
+    marketMaker: TAccountMetas[0];
     avatarCollection: TAccountMetas[1];
     accessoryCollection: TAccountMetas[2];
     config: TAccountMetas[3];
@@ -430,7 +427,7 @@ export function parseInitializeInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      payer: getNextAccount(),
+      marketMaker: getNextAccount(),
       avatarCollection: getNextAccount(),
       accessoryCollection: getNextAccount(),
       config: getNextAccount(),
