@@ -5,15 +5,18 @@ use anchor_spl::{
     metadata::{
         mpl_token_metadata::{
             instructions::{
-                CreateMasterEditionV3Cpi, CreateMasterEditionV3CpiAccounts,
-                CreateMasterEditionV3InstructionArgs, CreateMetadataAccountV3Cpi,
-                CreateMetadataAccountV3CpiAccounts, CreateMetadataAccountV3InstructionArgs,
+                CreateMasterEditionV3Cpi,
+                CreateMasterEditionV3CpiAccounts,
+                CreateMasterEditionV3InstructionArgs,
+                CreateMetadataAccountV3Cpi,
+                CreateMetadataAccountV3CpiAccounts,
+                CreateMetadataAccountV3InstructionArgs,
             },
-            types::{CollectionDetails, Creator, DataV2},
+            types::{ CollectionDetails, Creator, DataV2 },
         },
         Metadata,
     },
-    token::{mint_to, Mint, MintTo, Token, TokenAccount},
+    token::{ mint_to, Mint, MintTo, Token, TokenAccount },
 };
 
 use crate::state::Config;
@@ -27,20 +30,13 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = payer,
+        seeds = ["avatar collection".as_bytes(), config.key().as_ref()],
+        bump,
         mint::decimals = 0,
         mint::authority = config,
         mint::freeze_authority = config
     )]
     pub avatar_collection: Account<'info, Mint>,
-
-    #[account(
-        init,
-        payer = payer,
-        mint::decimals = 0,
-        mint::authority = config,
-        mint::freeze_authority = config
-    )]
-    pub accessory_collection: Account<'info, Mint>,
 
     #[account(
         init,
@@ -51,6 +47,44 @@ pub struct Initialize<'info> {
     pub avatar_collection_ata: Account<'info, TokenAccount>,
 
     #[account(
+        mut,
+        seeds = [
+            b"metadata".as_ref(),
+            metadata_program.key().as_ref(),
+            avatar_collection.key().as_ref(),
+        ],
+        bump,
+        seeds::program = metadata_program.key()
+    )]
+    /// CHECK: This is the avatar collection metadata account
+    pub avatar_collection_metadata: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"metadata".as_ref(),
+            metadata_program.key().as_ref(),
+            avatar_collection.key().as_ref(),
+            b"edition".as_ref(),
+        ],
+        bump,
+        seeds::program = metadata_program.key()
+    )]
+    /// CHECK: This the avatar collection master edition account
+    pub avatar_collection_master_edition: UncheckedAccount<'info>,
+
+    #[account(
+        init,
+        payer = payer,
+        seeds = ["accessory collection".as_bytes(), config.key().as_ref()],
+        bump,
+        mint::decimals = 0,
+        mint::authority = config,
+        mint::freeze_authority = config
+    )]
+    pub accessory_collection: Account<'info, Mint>,
+
+    #[account(
         init,
         payer = payer,
         associated_token::mint = accessory_collection,
@@ -58,20 +92,31 @@ pub struct Initialize<'info> {
     )]
     pub accessory_collection_ata: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    /// CHECK: This account will be initialized by the metaplex program
-    pub avatar_collection_metadata: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    /// CHECK: This account will be initialized by the metaplex program
+    #[account(
+        mut,
+        seeds = [
+            b"metadata".as_ref(),
+            metadata_program.key().as_ref(),
+            accessory_collection.key().as_ref(),
+        ],
+        bump,
+        seeds::program = metadata_program.key()
+    )]
+    /// CHECK: This is the accessory collection metadata account
     pub accessory_collection_metadata: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    /// CHECK: This account will be initialized by the metaplex program
-    pub avatar_collection_master_edition: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    /// CHECK: This account will be initialized by the metaplex program
+    #[account(
+        mut,
+        seeds = [
+            b"metadata".as_ref(),
+            metadata_program.key().as_ref(),
+            accessory_collection.key().as_ref(),
+            b"edition".as_ref(),
+        ],
+        bump,
+        seeds::program = metadata_program.key()
+    )]
+    /// CHECK: This is the accessory collection master edition account
     pub accessory_collection_master_edition: UncheckedAccount<'info>,
 
     #[account(
@@ -86,11 +131,11 @@ pub struct Initialize<'info> {
     #[account(seeds = [b"treasury", config.key().as_ref()], bump)]
     pub treasury: SystemAccount<'info>,
 
-    associated_token_program: Program<'info, AssociatedToken>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 
-    token_program: Program<'info, Token>,
+    pub token_program: Program<'info, Token>,
 
-    token_metadata_program: Program<'info, Metadata>,
+    pub metadata_program: Program<'info, Metadata>,
 
     pub system_program: Program<'info, System>,
 }
@@ -122,11 +167,13 @@ impl<'info> Initialize<'info> {
         &mut self,
         seed: u64,
         fee: u16,
-        bumps: &InitializeBumps,
+        bumps: &InitializeBumps
     ) -> Result<()> {
         self.config.set_inner(Config {
             bump: bumps.config,
             treasury_bump: bumps.treasury,
+            avatar_collection_bump: bumps.avatar_collection,
+            accessory_collection_bump: bumps.accessory_collection,
             avatar_collection: self.avatar_collection.key(),
             accessory_collection: self.accessory_collection.key(),
             seed,
@@ -171,7 +218,7 @@ impl<'info> Initialize<'info> {
         let authority = &self.config.to_account_info();
         let payer = &self.payer.to_account_info();
         let system_program = &self.system_program.to_account_info();
-        let metadata_program = &self.token_metadata_program.to_account_info();
+        let metadata_program = &self.metadata_program.to_account_info();
 
         let creator = vec![Creator {
             address: self.config.key().clone(),
@@ -202,7 +249,7 @@ impl<'info> Initialize<'info> {
                 },
                 is_mutable: true,
                 collection_details: Some(CollectionDetails::V1 { size: 0 }),
-            },
+            }
         );
         metadata_account.invoke_signed(signer_seeds)?;
 
@@ -211,14 +258,14 @@ impl<'info> Initialize<'info> {
 
     pub fn create_accessory_collection_metadata(
         &mut self,
-        signer_seeds: &[&[&[u8]]],
+        signer_seeds: &[&[&[u8]]]
     ) -> Result<()> {
         let metadata = &self.accessory_collection_metadata.to_account_info();
         let mint = &self.accessory_collection.to_account_info();
         let authority = &self.config.to_account_info();
         let payer = &self.payer.to_account_info();
         let system_program = &self.system_program.to_account_info();
-        let metadata_program = &self.token_metadata_program.to_account_info();
+        let metadata_program = &self.metadata_program.to_account_info();
 
         let creator = vec![Creator {
             address: self.config.key().clone(),
@@ -249,7 +296,7 @@ impl<'info> Initialize<'info> {
                 },
                 is_mutable: true,
                 collection_details: Some(CollectionDetails::V1 { size: 0 }),
-            },
+            }
         );
         metadata_account.invoke_signed(signer_seeds)?;
 
@@ -258,7 +305,7 @@ impl<'info> Initialize<'info> {
 
     pub fn create_avatar_collection_master_edition(
         &mut self,
-        signer_seeds: &[&[&[u8]]],
+        signer_seeds: &[&[&[u8]]]
     ) -> Result<()> {
         let edition = &self.avatar_collection_master_edition.to_account_info();
         let mint = &self.avatar_collection.to_account_info();
@@ -267,7 +314,7 @@ impl<'info> Initialize<'info> {
         let metadata = &self.avatar_collection_metadata.to_account_info();
         let system_program = &self.system_program.to_account_info();
         let token_program = &self.token_program.to_account_info();
-        let metadata_program = &self.token_metadata_program.to_account_info();
+        let metadata_program = &self.metadata_program.to_account_info();
 
         let master_edition_account = CreateMasterEditionV3Cpi::new(
             metadata_program,
@@ -284,7 +331,7 @@ impl<'info> Initialize<'info> {
             },
             CreateMasterEditionV3InstructionArgs {
                 max_supply: Some(0),
-            },
+            }
         );
         master_edition_account.invoke_signed(signer_seeds)?;
 
@@ -293,7 +340,7 @@ impl<'info> Initialize<'info> {
 
     pub fn create_accessory_collection_master_edition(
         &mut self,
-        signer_seeds: &[&[&[u8]]],
+        signer_seeds: &[&[&[u8]]]
     ) -> Result<()> {
         let edition = &self.accessory_collection_master_edition.to_account_info();
         let mint = &self.accessory_collection.to_account_info();
@@ -302,7 +349,7 @@ impl<'info> Initialize<'info> {
         let metadata = &self.accessory_collection_metadata.to_account_info();
         let system_program = &self.system_program.to_account_info();
         let token_program = &self.token_program.to_account_info();
-        let metadata_program = &self.token_metadata_program.to_account_info();
+        let metadata_program = &self.metadata_program.to_account_info();
 
         let master_edition_account = CreateMasterEditionV3Cpi::new(
             metadata_program,
@@ -319,7 +366,7 @@ impl<'info> Initialize<'info> {
             },
             CreateMasterEditionV3InstructionArgs {
                 max_supply: Some(0),
-            },
+            }
         );
         master_edition_account.invoke_signed(signer_seeds)?;
 
