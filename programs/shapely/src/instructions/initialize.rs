@@ -63,19 +63,19 @@ pub struct Initialize<'info> {
 
     #[account(mut)]
     /// CHECK: This account will be initialized by the metaplex program
-    pub avatar_metadata: UncheckedAccount<'info>,
+    pub avatar_collection_metadata: UncheckedAccount<'info>,
 
     #[account(mut)]
     /// CHECK: This account will be initialized by the metaplex program
-    pub accessory_metadata: UncheckedAccount<'info>,
+    pub accessory_collection_metadata: UncheckedAccount<'info>,
 
     #[account(mut)]
     /// CHECK: This account will be initialized by the metaplex program
-    pub avatar_master_edition: UncheckedAccount<'info>,
+    pub avatar_collection_master_edition: UncheckedAccount<'info>,
 
     #[account(mut)]
     /// CHECK: This account will be initialized by the metaplex program
-    pub accessory_master_edition: UncheckedAccount<'info>,
+    pub accessory_collection_master_edition: UncheckedAccount<'info>,
 
     #[account(
         init,
@@ -114,9 +114,9 @@ impl<'info> Initialize<'info> {
 
         self.create_accessory_collection_metadata(signer_seeds)?;
 
-        self.create_avatar_master_edition(signer_seeds)?;
+        self.create_avatar_collection_master_edition(signer_seeds)?;
 
-        self.create_accessory_master_edition(signer_seeds)?;
+        self.create_accessory_collection_master_edition(signer_seeds)?;
 
         Ok(())
     }
@@ -169,7 +169,7 @@ impl<'info> Initialize<'info> {
     }
 
     pub fn create_avatar_collection_metadata(&mut self, signer_seeds: &[&[&[u8]]]) -> Result<()> {
-        let metadata = &self.avatar_metadata.to_account_info();
+        let metadata = &self.avatar_collection_metadata.to_account_info();
         let mint = &self.avatar_collection.to_account_info();
         let authority = &self.config.to_account_info();
         let payer = &self.payer.to_account_info();
@@ -218,7 +218,7 @@ impl<'info> Initialize<'info> {
         &mut self,
         signer_seeds: &[&[&[u8]]]
     ) -> Result<()> {
-        let metadata = &self.accessory_metadata.to_account_info();
+        let metadata = &self.accessory_collection_metadata.to_account_info();
         let mint = &self.accessory_collection.to_account_info();
         let authority = &self.config.to_account_info();
         let payer = &self.payer.to_account_info();
@@ -263,12 +263,15 @@ impl<'info> Initialize<'info> {
         Ok(())
     }
 
-    pub fn create_avatar_master_edition(&mut self, signer_seeds: &[&[&[u8]]]) -> Result<()> {
-        let edition = &self.avatar_master_edition.to_account_info();
+    pub fn create_avatar_collection_master_edition(
+        &mut self,
+        signer_seeds: &[&[&[u8]]]
+    ) -> Result<()> {
+        let edition = &self.avatar_collection_master_edition.to_account_info();
         let mint = &self.avatar_collection.to_account_info();
         let authority = &self.config.to_account_info();
         let payer = &self.payer.to_account_info();
-        let metadata = &self.avatar_metadata.to_account_info();
+        let metadata = &self.avatar_collection_metadata.to_account_info();
         let system_program = &self.system_program.to_account_info();
         let token_program = &self.token_program.to_account_info();
         let metadata_program = &self.token_metadata_program.to_account_info();
@@ -295,12 +298,15 @@ impl<'info> Initialize<'info> {
         Ok(())
     }
 
-    pub fn create_accessory_master_edition(&mut self, signer_seeds: &[&[&[u8]]]) -> Result<()> {
-        let edition = &self.accessory_master_edition.to_account_info();
+    pub fn create_accessory_collection_master_edition(
+        &mut self,
+        signer_seeds: &[&[&[u8]]]
+    ) -> Result<()> {
+        let edition = &self.accessory_collection_master_edition.to_account_info();
         let mint = &self.accessory_collection.to_account_info();
         let authority = &self.config.to_account_info();
         let payer = &self.payer.to_account_info();
-        let metadata = &self.accessory_metadata.to_account_info();
+        let metadata = &self.accessory_collection_metadata.to_account_info();
         let system_program = &self.system_program.to_account_info();
         let token_program = &self.token_program.to_account_info();
         let metadata_program = &self.token_metadata_program.to_account_info();
