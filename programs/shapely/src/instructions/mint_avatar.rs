@@ -4,21 +4,18 @@ use anchor_spl::{
     metadata::{
         mpl_token_metadata::{
             instructions::{
-                CreateMasterEditionV3Cpi,
-                CreateMasterEditionV3CpiAccounts,
-                CreateMasterEditionV3InstructionArgs,
-                CreateMetadataAccountV3Cpi,
-                CreateMetadataAccountV3CpiAccounts,
-                CreateMetadataAccountV3InstructionArgs,
+                CreateMasterEditionV3Cpi, CreateMasterEditionV3CpiAccounts,
+                CreateMasterEditionV3InstructionArgs, CreateMetadataAccountV3Cpi,
+                CreateMetadataAccountV3CpiAccounts, CreateMetadataAccountV3InstructionArgs,
             },
-            types::{ CollectionDetails, Creator, DataV2 },
+            types::{CollectionDetails, Creator, DataV2},
         },
         Metadata,
     },
-    token::{ mint_to, Mint, MintTo, Token, TokenAccount },
+    token::{mint_to, Mint, MintTo, Token, TokenAccount},
 };
 
-use crate::{ error::ShapelyError, state::Config };
+use crate::{error::ShapelyError, state::Config};
 
 #[derive(Accounts)]
 pub struct MintAvatar<'info> {
@@ -126,7 +123,7 @@ impl<'info> MintAvatar<'info> {
         &mut self,
         name: String,
         uri: String,
-        signer_seeds: &[&[&[u8]]]
+        signer_seeds: &[&[&[u8]]],
     ) -> Result<()> {
         let metadata = &self.avatar_metadata.to_account_info();
         let mint = &self.avatar_mint.to_account_info();
@@ -164,7 +161,7 @@ impl<'info> MintAvatar<'info> {
                 },
                 is_mutable: true,
                 collection_details: Some(CollectionDetails::V1 { size: 0 }),
-            }
+            },
         );
         metadata_account.invoke_signed(signer_seeds)?;
 
@@ -196,7 +193,7 @@ impl<'info> MintAvatar<'info> {
             },
             CreateMasterEditionV3InstructionArgs {
                 max_supply: Some(0),
-            }
+            },
         );
         master_edition_account.invoke_signed(signer_seeds)?;
 

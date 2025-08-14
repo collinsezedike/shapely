@@ -5,18 +5,15 @@ use anchor_spl::{
     metadata::{
         mpl_token_metadata::{
             instructions::{
-                CreateMasterEditionV3Cpi,
-                CreateMasterEditionV3CpiAccounts,
-                CreateMasterEditionV3InstructionArgs,
-                CreateMetadataAccountV3Cpi,
-                CreateMetadataAccountV3CpiAccounts,
-                CreateMetadataAccountV3InstructionArgs,
+                CreateMasterEditionV3Cpi, CreateMasterEditionV3CpiAccounts,
+                CreateMasterEditionV3InstructionArgs, CreateMetadataAccountV3Cpi,
+                CreateMetadataAccountV3CpiAccounts, CreateMetadataAccountV3InstructionArgs,
             },
-            types::{ CollectionDetails, Creator, DataV2 },
+            types::{CollectionDetails, Creator, DataV2},
         },
         Metadata,
     },
-    token::{ mint_to, Mint, MintTo, Token, TokenAccount },
+    token::{mint_to, Mint, MintTo, Token, TokenAccount},
 };
 
 use crate::state::Config;
@@ -167,7 +164,7 @@ impl<'info> Initialize<'info> {
         &mut self,
         seed: u64,
         fee: u16,
-        bumps: &InitializeBumps
+        bumps: &InitializeBumps,
     ) -> Result<()> {
         self.config.set_inner(Config {
             bump: bumps.config,
@@ -249,7 +246,7 @@ impl<'info> Initialize<'info> {
                 },
                 is_mutable: true,
                 collection_details: Some(CollectionDetails::V1 { size: 0 }),
-            }
+            },
         );
         metadata_account.invoke_signed(signer_seeds)?;
 
@@ -258,7 +255,7 @@ impl<'info> Initialize<'info> {
 
     pub fn create_accessory_collection_metadata(
         &mut self,
-        signer_seeds: &[&[&[u8]]]
+        signer_seeds: &[&[&[u8]]],
     ) -> Result<()> {
         let metadata = &self.accessory_collection_metadata.to_account_info();
         let mint = &self.accessory_collection.to_account_info();
@@ -296,7 +293,7 @@ impl<'info> Initialize<'info> {
                 },
                 is_mutable: true,
                 collection_details: Some(CollectionDetails::V1 { size: 0 }),
-            }
+            },
         );
         metadata_account.invoke_signed(signer_seeds)?;
 
@@ -305,7 +302,7 @@ impl<'info> Initialize<'info> {
 
     pub fn create_avatar_collection_master_edition(
         &mut self,
-        signer_seeds: &[&[&[u8]]]
+        signer_seeds: &[&[&[u8]]],
     ) -> Result<()> {
         let edition = &self.avatar_collection_master_edition.to_account_info();
         let mint = &self.avatar_collection.to_account_info();
@@ -331,7 +328,7 @@ impl<'info> Initialize<'info> {
             },
             CreateMasterEditionV3InstructionArgs {
                 max_supply: Some(0),
-            }
+            },
         );
         master_edition_account.invoke_signed(signer_seeds)?;
 
@@ -340,7 +337,7 @@ impl<'info> Initialize<'info> {
 
     pub fn create_accessory_collection_master_edition(
         &mut self,
-        signer_seeds: &[&[&[u8]]]
+        signer_seeds: &[&[&[u8]]],
     ) -> Result<()> {
         let edition = &self.accessory_collection_master_edition.to_account_info();
         let mint = &self.accessory_collection.to_account_info();
@@ -366,7 +363,7 @@ impl<'info> Initialize<'info> {
             },
             CreateMasterEditionV3InstructionArgs {
                 max_supply: Some(0),
-            }
+            },
         );
         master_edition_account.invoke_signed(signer_seeds)?;
 
