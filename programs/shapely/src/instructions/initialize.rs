@@ -100,8 +100,8 @@ pub struct Initialize<'info> {
 
 impl<'info> Initialize<'info> {
     pub fn initialize(&mut self, seed: u64, fee: u16, bumps: &InitializeBumps) -> Result<()> {
-        let config_seed_bytes = self.config.seed.to_le_bytes();
-        let seeds = &[b"config", config_seed_bytes.as_ref(), &[self.config.bump]];
+        let config_seed_bytes = seed.to_le_bytes();
+        let seeds = &[b"config", config_seed_bytes.as_ref(), &[bumps.config]];
         let signer_seeds = &[&seeds[..]];
 
         self.initialize_config(seed, fee, bumps)?;
@@ -154,12 +154,15 @@ impl<'info> Initialize<'info> {
 
     pub fn mint_accessory_collection(&mut self, signer_seeds: &[&[&[u8]]]) -> Result<()> {
         let cpi_program = self.token_program.to_account_info();
+
         let cpi_accounts = MintTo {
             mint: self.accessory_collection.to_account_info(),
             to: self.accessory_collection_ata.to_account_info(),
             authority: self.config.to_account_info(),
         };
+
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
         mint_to(cpi_ctx, 1)?;
 
         Ok(())
