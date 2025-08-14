@@ -1,90 +1,238 @@
 import { before, describe, test, it } from "node:test";
 import assert from "node:assert";
+import { BN } from "bn.js";
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Shapely } from "../target/types/shapely";
+import { address, Address } from "gill";
 import {
-	address,
-	Address,
-	createKeyPairSignerFromBytes,
-	generateKeyPairSigner,
-	KeyPairSigner,
-} from "gill";
-import { SYSTEM_PROGRAM_ADDRESS } from "gill/programs";
+	ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+	getAssociatedTokenAccountAddress,
+	getTokenMetadataAddress,
+	SYSTEM_PROGRAM_ADDRESS,
+	TOKEN_METADATA_PROGRAM_ADDRESS,
+	TOKEN_PROGRAM_ADDRESS,
+} from "gill/programs";
+import { Keypair, ComputeBudgetProgram, Transaction } from "@solana/web3.js";
 
-import * as programClient from "../client/ts";
 import {
-	getInitializeInstruction,
-	getMintAccessoryInstruction,
-} from "../client/ts";
-
-import { getConfigPDA, getTreasuryPDA, submitTransaction } from "./helpers";
-import wallet from "../test-wallet.json";
-
-type initializeParams = Parameters<typeof getInitializeInstruction>[0];
-type mintAccessoryParams = Parameters<typeof getMintAccessoryInstruction>[0];
+	generateAndAirdropSigner,
+	getAccessoryMintPDA,
+	getAvatarMintPDA,
+	getCollectionMintPDA,
+	getConfigPDA,
+	getMasterEdition,
+	getTreasuryPDA,
+} from "./helpers";
 
 describe("Shapely", () => {
-	const PROGRAM_ID = programClient.SHAPELY_PROGRAM_ADDRESS;
-	const MPL_PROGRAM_ID = address(
-		"CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
-	);
+	const provider = anchor.AnchorProvider.env();
 
-	let payer: KeyPairSigner;
-	let artist: KeyPairSigner;
-	let avatarCollection: KeyPairSigner;
-	let accessoryCollection: KeyPairSigner;
-	let accessory: KeyPairSigner;
+	anchor.setProvider(provider);
+
+	const program = anchor.workspace.Shapely as Program<Shapely>;
+
+	let payer: Keypair;
+	let artist: Keypair;
+	let collector: Keypair;
+
 	let config: Address;
 	let treasury: Address;
 
-	let configSeed = Math.floor(Math.random() * 10_000_000_000);
-	let fee = 150; // 1.5%
+	let avatarMint: Address;
+	let avatarMetadata: Address;
+	let avatarMasterEdition: Address;
+	let avatarCollection: Address;
+	let avatarCollectionAta: Address;
+	let avatarCollectionMetadata: Address;
+	let avatarCollectionMasterEdition: Address;
+
+	let accessoryMint: Address;
+	let accessoryMetadata: Address;
+	let accessoryMasterEdition: Address;
+	let accessoryCollection: Address;
+	let accessoryCollectionAta: Address;
+	let accessoryCollectionMetadata: Address;
+	let accessoryCollectionMasterEdition: Address;
+
+	let artistAccessoryAta: Address;
+	let collectorAvatarAta: Address;
+
+	const configSeed = Math.floor(Math.random() * 10_000_000_000);
+	const fee = 150; // 1.5%
+	const avatarName = "AVATAR-#001";
+	const accessoryName = "ACCESSORY-#001";
+	const accessoryURI = "https://www.jsonkeeper.com/b/QOVHK";
+	const avatarURI = "https://www.jsonkeeper.com/b/98WJO";
 
 	before(async () => {
-		payer = await createKeyPairSignerFromBytes(Uint8Array.from(wallet));
-		artist = await createKeyPairSignerFromBytes(Uint8Array.from(wallet));
-		avatarCollection = await generateKeyPairSigner();
-		accessoryCollection = await generateKeyPairSigner();
-		accessory = await generateKeyPairSigner();
+		payer = await generateAndAirdropSigner(provider.connection);
+		artist = await generateAndAirdropSigner(provider.connection);
+		collector = await generateAndAirdropSigner(provider.connection);
 
-		config = await getConfigPDA(PROGRAM_ID, configSeed);
-		treasury = await getTreasuryPDA(PROGRAM_ID, config);
-	});
+		config = await getConfigPDA(configSeed);
+		treasury = await getTreasuryPDA(config);
 
-	it("Should initialize the collection mints", async () => {
-		const params: initializeParams = {
-			// Arguments
-			seed: configSeed,
-			fee,
-			// Accounts
-			payer,
-			accessoryCollection,
+		avatarCollection = await getCollectionMintPDA("avatar", config);
+		avatarCollectionAta = await getAssociatedTokenAccountAddress(
 			avatarCollection,
-			config,
-			treasury,
-			systemProgram: SYSTEM_PROGRAM_ADDRESS,
-			mplCoreProgram: MPL_PROGRAM_ID,
-		};
+			config
+		);
+		avatarCollectionMetadata =
+			await getTokenMetadataAddress(avatarCollection);
+		avatarCollectionMasterEdition =
+			await getMasterEdition(avatarCollection);
+		avatarMint = await getAvatarMintPDA(
+			address(collector.publicKey.toBase58()),
+			avatarCollection
+		);
+		avatarMetadata = await getTokenMetadataAddress(avatarMint);
+		avatarMasterEdition = await getMasterEdition(avatarMint);
 
-		const ixn = getInitializeInstruction(params);
+		accessoryCollection = await getCollectionMintPDA("accessory", config);
+		accessoryCollectionAta = await getAssociatedTokenAccountAddress(
+			accessoryCollection,
+			config
+		);
+		accessoryCollectionMetadata =
+			await getTokenMetadataAddress(accessoryCollection);
+		accessoryCollectionMasterEdition =
+			await getMasterEdition(accessoryCollection);
+		accessoryMint = await getAccessoryMintPDA(
+			accessoryName,
+			accessoryCollection
+		);
+		accessoryMetadata = await getTokenMetadataAddress(accessoryMint);
+		accessoryMasterEdition = await getMasterEdition(accessoryMint);
 
-		await submitTransaction(payer, ixn);
+		artistAccessoryAta = await getAssociatedTokenAccountAddress(
+			accessoryMint,
+			address(artist.publicKey.toBase58())
+		);
+		collectorAvatarAta = await getAssociatedTokenAccountAddress(
+			avatarMint,
+			address(collector.publicKey.toBase58())
+		);
 	});
 
-	it("Should mint a new accessory NFT", async () => {
-		const params: mintAccessoryParams = {
-			// Arguments
-			name: "Cyan Leather Jacket",
-			uri: "https://www.jsonkeeper.com/b/QOVHK",
-			// Accounts
-			artist,
-			accessory,
-			config,
-			accessoryCollection: accessoryCollection.address,
-			systemProgram: SYSTEM_PROGRAM_ADDRESS,
-			mplCoreProgram: MPL_PROGRAM_ID,
-		};
+	it("Should initialize the avatar and accessory collection", async () => {
+		const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+			units: 400_000,
+		});
+		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+			microLamports: 1,
+		});
 
-		const ixn = getMintAccessoryInstruction(params);
+		const tx = new Transaction()
+			.add(modifyComputeUnits) // Request higher CU limit
+			.add(addPriorityFee) // Optional: offer priority fee
+			.add(
+				await program.methods
+					.initialize(new BN(configSeed), fee)
+					.accountsStrict({
+						payer: payer.publicKey,
+						config,
+						treasury,
 
-		await submitTransaction(artist, ixn);
+						avatarCollection,
+						avatarCollectionAta,
+						avatarCollectionMetadata,
+						avatarCollectionMasterEdition,
+
+						accessoryCollection,
+						accessoryCollectionAta,
+						accessoryCollectionMetadata,
+						accessoryCollectionMasterEdition,
+
+						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
+						tokenProgram: TOKEN_PROGRAM_ADDRESS,
+						associatedTokenProgram:
+							ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+						systemProgram: SYSTEM_PROGRAM_ADDRESS,
+					})
+					.instruction()
+			);
+
+		const sig = await provider.sendAndConfirm(tx, [payer]);
+
+		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
+	});
+
+	it("Should initialize a new accessory mint", async () => {
+		const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+			units: 400_000,
+		});
+		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+			microLamports: 1,
+		});
+
+		const tx = new Transaction()
+			.add(modifyComputeUnits) // Request higher CU limit
+			.add(addPriorityFee) // Optional: offer priority fee
+			.add(
+				await program.methods
+					.mintAccessory(accessoryName, accessoryURI)
+					.accountsStrict({
+						artist: artist.publicKey,
+						artistAccessoryAta,
+
+						config,
+
+						accessoryMint,
+						accessoryMetadata,
+						accessoryCollection,
+						accessoryMasterEdition,
+
+						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
+						tokenProgram: TOKEN_PROGRAM_ADDRESS,
+						associatedTokenProgram:
+							ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+						systemProgram: SYSTEM_PROGRAM_ADDRESS,
+					})
+					.instruction()
+			);
+
+		const sig = await provider.sendAndConfirm(tx, [artist]);
+
+		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
+	});
+
+	it("Should initialize a new avatar mint", async () => {
+		const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+			units: 400_000,
+		});
+		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+			microLamports: 1,
+		});
+
+		const tx = new Transaction()
+			.add(modifyComputeUnits) // Request higher CU limit
+			.add(addPriorityFee) // Optional: offer priority fee
+			.add(
+				await program.methods
+					.mintAvatar(avatarName, avatarURI)
+					.accountsStrict({
+						collector: collector.publicKey,
+						collectorAvatarAta,
+
+						config,
+
+						avatarMint,
+						avatarMetadata,
+						avatarCollection,
+						avatarMasterEdition,
+
+						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
+						tokenProgram: TOKEN_PROGRAM_ADDRESS,
+						associatedTokenProgram:
+							ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+						systemProgram: SYSTEM_PROGRAM_ADDRESS,
+					})
+					.instruction()
+			);
+
+		const sig = await provider.sendAndConfirm(tx, [collector]);
+
+		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
 	});
 });

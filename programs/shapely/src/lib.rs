@@ -22,4 +22,8 @@ pub mod shapely {
     pub fn mint_accessory(ctx: Context<MintAccessory>, name: String, uri: String) -> Result<()> {
         ctx.accounts.mint_accessory(name, uri)
     }
+
+    pub fn mint_avatar(ctx: Context<MintAvatar>, name: String, uri: String) -> Result<()> {
+        ctx.accounts.mint_avatar(name, uri)
+    }
 }
