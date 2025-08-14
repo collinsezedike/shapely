@@ -57,12 +57,12 @@ export async function getTreasuryPDA(config: Address): Promise<Address> {
 }
 
 export async function getCollectionMintPDA(
-	collection: string,
+	collectionType: "avatar" | "accessory",
 	config: Address
 ): Promise<Address> {
 	const [collectionMintPDA] = await getProgramDerivedAddress({
 		programAddress: PROGRAM_ID,
-		seeds: [`${collection} collection`, addressEncoder.encode(config)],
+		seeds: [`${collectionType} collection`, addressEncoder.encode(config)],
 	});
 
 	return collectionMintPDA;
@@ -80,4 +80,36 @@ export async function getMasterEdition(mint: Address): Promise<Address> {
 	});
 
 	return masterEdition;
+}
+
+export async function getAccessoryMintPDA(
+	accessoryName: string,
+	accessoryCollection: Address
+): Promise<Address> {
+	const [NFTMintPDA] = await getProgramDerivedAddress({
+		programAddress: PROGRAM_ID,
+		seeds: [
+			"accessory",
+			accessoryName,
+			addressEncoder.encode(accessoryCollection),
+		],
+	});
+
+	return NFTMintPDA;
+}
+
+export async function getAvatarMintPDA(
+	user: Address,
+	avatarCollection: Address
+): Promise<Address> {
+	const [NFTMintPDA] = await getProgramDerivedAddress({
+		programAddress: PROGRAM_ID,
+		seeds: [
+			"avatar",
+			addressEncoder.encode(user),
+			addressEncoder.encode(avatarCollection),
+		],
+	});
+
+	return NFTMintPDA;
 }
