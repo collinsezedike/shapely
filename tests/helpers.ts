@@ -7,9 +7,17 @@ import {
 	getProgramDerivedAddress,
 	address,
 } from "gill";
-import { TOKEN_METADATA_PROGRAM_ADDRESS } from "gill/programs";
-
-import { Keypair, LAMPORTS_PER_SOL, Connection } from "@solana/web3.js";
+import {
+	getAssociatedTokenAccountAddress,
+	getTokenMetadataAddress,
+	TOKEN_METADATA_PROGRAM_ADDRESS,
+} from "gill/programs";
+import {
+	Connection,
+	Keypair,
+	LAMPORTS_PER_SOL,
+	PublicKey,
+} from "@solana/web3.js";
 
 const addressEncoder = getAddressEncoder();
 
@@ -35,7 +43,24 @@ export async function generateAndAirdropSigner(
 	return kp;
 }
 
-export async function getConfigPDA(seed: number): Promise<Address> {
+export async function getATA(
+	mint: PublicKey,
+	owner: PublicKey
+): Promise<PublicKey> {
+	const ata = await getAssociatedTokenAccountAddress(
+		address(mint.toBase58()),
+		address(owner.toBase58())
+	);
+
+	return new PublicKey(ata);
+}
+
+export async function getMetadataAccount(mint: PublicKey): Promise<PublicKey> {
+	const metadata = await getTokenMetadataAddress(address(mint.toBase58()));
+	return new PublicKey(metadata);
+}
+
+export async function getConfigPDA(seed: number): Promise<PublicKey> {
 	const seedBuffer = Buffer.alloc(8);
 	seedBuffer.writeBigUInt64LE(BigInt(seed), 0);
 
@@ -44,56 +69,59 @@ export async function getConfigPDA(seed: number): Promise<Address> {
 		seeds: ["config", seedBuffer],
 	});
 
-	return configPDA;
+	return new PublicKey(configPDA);
 }
 
-export async function getTreasuryPDA(config: Address): Promise<Address> {
+export async function getTreasuryPDA(config: PublicKey): Promise<PublicKey> {
 	const [treasury] = await getProgramDerivedAddress({
 		programAddress: PROGRAM_ID,
-		seeds: ["treasury", addressEncoder.encode(config)],
+		seeds: ["treasury", addressEncoder.encode(address(config.toBase58()))],
 	});
 
-	return treasury;
+	return new PublicKey(treasury);
 }
 
 export async function getCollectionMintPDA(
 	collectionType: "avatar" | "accessory",
-	config: Address
-): Promise<Address> {
+	config: PublicKey
+): Promise<PublicKey> {
 	const [collectionMintPDA] = await getProgramDerivedAddress({
 		programAddress: PROGRAM_ID,
-		seeds: [`${collectionType} collection`, addressEncoder.encode(config)],
+		seeds: [
+			`${collectionType} collection`,
+			addressEncoder.encode(address(config.toBase58())),
+		],
 	});
 
-	return collectionMintPDA;
+	return new PublicKey(collectionMintPDA);
 }
 
-export async function getMasterEdition(mint: Address): Promise<Address> {
+export async function getMasterEdition(mint: PublicKey): Promise<PublicKey> {
 	const [masterEdition] = await getProgramDerivedAddress({
 		programAddress: TOKEN_METADATA_PROGRAM_ADDRESS,
 		seeds: [
 			"metadata",
 			addressEncoder.encode(TOKEN_METADATA_PROGRAM_ADDRESS),
-			addressEncoder.encode(mint),
+			addressEncoder.encode(address(mint.toBase58())),
 			"edition",
 		],
 	});
 
-	return masterEdition;
+	return new PublicKey(masterEdition);
 }
 
 export async function getAvatarMintPDA(
-	user: Address,
-	avatarCollection: Address
-): Promise<Address> {
+	collector: PublicKey,
+	avatarCollection: PublicKey
+): Promise<PublicKey> {
 	const [NFTMintPDA] = await getProgramDerivedAddress({
 		programAddress: PROGRAM_ID,
 		seeds: [
 			"avatar",
-			addressEncoder.encode(user),
-			addressEncoder.encode(avatarCollection),
+			addressEncoder.encode(address(collector.toBase58())),
+			addressEncoder.encode(address(avatarCollection.toBase58())),
 		],
 	});
 
-	return NFTMintPDA;
+	return new PublicKey(NFTMintPDA);
 }

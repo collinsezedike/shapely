@@ -4,23 +4,28 @@ import { BN } from "bn.js";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Shapely } from "../target/types/shapely";
-import { address, Address } from "gill";
 import {
 	ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-	getAssociatedTokenAccountAddress,
 	getTokenMetadataAddress,
 	SYSTEM_PROGRAM_ADDRESS,
 	TOKEN_METADATA_PROGRAM_ADDRESS,
 	TOKEN_PROGRAM_ADDRESS,
 } from "gill/programs";
-import { Keypair, ComputeBudgetProgram, Transaction } from "@solana/web3.js";
+import {
+	Keypair,
+	ComputeBudgetProgram,
+	Transaction,
+	PublicKey,
+} from "@solana/web3.js";
 
 import {
 	generateAndAirdropSigner,
+	getATA,
 	getAvatarMintPDA,
 	getCollectionMintPDA,
 	getConfigPDA,
 	getMasterEdition,
+	getMetadataAccount,
 	getTreasuryPDA,
 } from "./helpers";
 
@@ -35,27 +40,27 @@ describe("Shapely", () => {
 	let artist: Keypair;
 	let collector: Keypair;
 
-	let config: Address;
-	let treasury: Address;
+	let config: PublicKey;
+	let treasury: PublicKey;
 
-	let avatarMint: Address;
-	let avatarMetadata: Address;
-	let avatarMasterEdition: Address;
-	let avatarCollection: Address;
-	let avatarCollectionAta: Address;
-	let avatarCollectionMetadata: Address;
-	let avatarCollectionMasterEdition: Address;
+	let avatarMint: PublicKey;
+	let avatarMetadata: PublicKey;
+	let avatarMasterEdition: PublicKey;
+	let avatarCollection: PublicKey;
+	let avatarCollectionAta: PublicKey;
+	let avatarCollectionMetadata: PublicKey;
+	let avatarCollectionMasterEdition: PublicKey;
 
 	let accessoryMint: Keypair;
-	let accessoryMetadata: Address;
-	let accessoryMasterEdition: Address;
-	let accessoryCollection: Address;
-	let accessoryCollectionAta: Address;
-	let accessoryCollectionMetadata: Address;
-	let accessoryCollectionMasterEdition: Address;
+	let accessoryMetadata: PublicKey;
+	let accessoryMasterEdition: PublicKey;
+	let accessoryCollection: PublicKey;
+	let accessoryCollectionAta: PublicKey;
+	let accessoryCollectionMetadata: PublicKey;
+	let accessoryCollectionMasterEdition: PublicKey;
 
-	let artistAccessoryAta: Address;
-	let collectorAvatarAta: Address;
+	let artistAccessoryAta: PublicKey;
+	let collectorAvatarAta: PublicKey;
 
 	const configSeed = Math.floor(Math.random() * 10_000_000_000);
 	const fee = 150; // 1.5%
@@ -73,46 +78,36 @@ describe("Shapely", () => {
 		treasury = await getTreasuryPDA(config);
 
 		avatarCollection = await getCollectionMintPDA("avatar", config);
-		avatarCollectionAta = await getAssociatedTokenAccountAddress(
-			avatarCollection,
-			config
-		);
-		avatarCollectionMetadata =
-			await getTokenMetadataAddress(avatarCollection);
+		avatarCollectionAta = await getATA(avatarCollection, config);
+		avatarCollectionMetadata = await getMetadataAccount(avatarCollection);
 		avatarCollectionMasterEdition =
 			await getMasterEdition(avatarCollection);
+
 		avatarMint = await getAvatarMintPDA(
-			address(collector.publicKey.toBase58()),
+			collector.publicKey,
 			avatarCollection
 		);
-		avatarMetadata = await getTokenMetadataAddress(avatarMint);
+		avatarMetadata = await getMetadataAccount(avatarMint);
 		avatarMasterEdition = await getMasterEdition(avatarMint);
 
 		accessoryCollection = await getCollectionMintPDA("accessory", config);
-		accessoryCollectionAta = await getAssociatedTokenAccountAddress(
-			accessoryCollection,
-			config
-		);
+		accessoryCollectionAta = await getATA(accessoryCollection, config);
 		accessoryCollectionMetadata =
-			await getTokenMetadataAddress(accessoryCollection);
+			await getMetadataAccount(accessoryCollection);
 		accessoryCollectionMasterEdition =
 			await getMasterEdition(accessoryCollection);
+
 		accessoryMint = Keypair.generate();
-		accessoryMetadata = await getTokenMetadataAddress(
-			address(accessoryMint.publicKey.toBase58())
-		);
+		accessoryMetadata = await getMetadataAccount(accessoryMint.publicKey);
 		accessoryMasterEdition = await getMasterEdition(
-			address(accessoryMint.publicKey.toBase58())
+			accessoryMint.publicKey
 		);
 
-		artistAccessoryAta = await getAssociatedTokenAccountAddress(
-			address(accessoryMint.publicKey.toBase58()),
-			address(artist.publicKey.toBase58())
+		artistAccessoryAta = await getATA(
+			accessoryMint.publicKey,
+			artist.publicKey
 		);
-		collectorAvatarAta = await getAssociatedTokenAccountAddress(
-			avatarMint,
-			address(collector.publicKey.toBase58())
-		);
+		collectorAvatarAta = await getATA(avatarMint, collector.publicKey);
 	});
 
 	it("Should initialize the avatar and accessory collection", async () => {
