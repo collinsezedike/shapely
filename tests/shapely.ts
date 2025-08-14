@@ -17,7 +17,6 @@ import { Keypair, ComputeBudgetProgram, Transaction } from "@solana/web3.js";
 
 import {
 	generateAndAirdropSigner,
-	getAccessoryMintPDA,
 	getAvatarMintPDA,
 	getCollectionMintPDA,
 	getConfigPDA,
@@ -47,7 +46,7 @@ describe("Shapely", () => {
 	let avatarCollectionMetadata: Address;
 	let avatarCollectionMasterEdition: Address;
 
-	let accessoryMint: Address;
+	let accessoryMint: Keypair;
 	let accessoryMetadata: Address;
 	let accessoryMasterEdition: Address;
 	let accessoryCollection: Address;
@@ -98,15 +97,16 @@ describe("Shapely", () => {
 			await getTokenMetadataAddress(accessoryCollection);
 		accessoryCollectionMasterEdition =
 			await getMasterEdition(accessoryCollection);
-		accessoryMint = await getAccessoryMintPDA(
-			accessoryName,
-			accessoryCollection
+		accessoryMint = Keypair.generate();
+		accessoryMetadata = await getTokenMetadataAddress(
+			address(accessoryMint.publicKey.toBase58())
 		);
-		accessoryMetadata = await getTokenMetadataAddress(accessoryMint);
-		accessoryMasterEdition = await getMasterEdition(accessoryMint);
+		accessoryMasterEdition = await getMasterEdition(
+			address(accessoryMint.publicKey.toBase58())
+		);
 
 		artistAccessoryAta = await getAssociatedTokenAccountAddress(
-			accessoryMint,
+			address(accessoryMint.publicKey.toBase58()),
 			address(artist.publicKey.toBase58())
 		);
 		collectorAvatarAta = await getAssociatedTokenAccountAddress(
@@ -178,7 +178,7 @@ describe("Shapely", () => {
 
 						config,
 
-						accessoryMint,
+						accessoryMint: accessoryMint.publicKey,
 						accessoryMetadata,
 						accessoryCollection,
 						accessoryMasterEdition,
@@ -192,7 +192,7 @@ describe("Shapely", () => {
 					.instruction()
 			);
 
-		const sig = await provider.sendAndConfirm(tx, [artist]);
+		const sig = await provider.sendAndConfirm(tx, [artist, accessoryMint]);
 
 		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
 	});

@@ -82,22 +82,6 @@ export async function getMasterEdition(mint: Address): Promise<Address> {
 	return masterEdition;
 }
 
-export async function getAccessoryMintPDA(
-	accessoryName: string,
-	accessoryCollection: Address
-): Promise<Address> {
-	const [NFTMintPDA] = await getProgramDerivedAddress({
-		programAddress: PROGRAM_ID,
-		seeds: [
-			"accessory",
-			accessoryName,
-			addressEncoder.encode(accessoryCollection),
-		],
-	});
-
-	return NFTMintPDA;
-}
-
 export async function getAvatarMintPDA(
 	user: Address,
 	avatarCollection: Address

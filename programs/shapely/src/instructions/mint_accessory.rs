@@ -29,8 +29,6 @@ pub struct MintAccessory<'info> {
     #[account(
         init,
         payer = artist,
-        seeds = [b"accessory", name.as_bytes(), accessory_collection.key().as_ref()],
-        bump,
         mint::decimals = 0,
         mint::authority = config,
         mint::freeze_authority = config
