@@ -81,6 +81,22 @@ export async function getTreasuryPDA(config: PublicKey): Promise<PublicKey> {
 	return new PublicKey(treasury);
 }
 
+export async function getListingPDA(
+	accessoryMint: PublicKey,
+	artist: PublicKey
+): Promise<PublicKey> {
+	const [listingPDA] = await getProgramDerivedAddress({
+		programAddress: PROGRAM_ID,
+		seeds: [
+			"listing",
+			addressEncoder.encode(address(accessoryMint.toBase58())),
+			addressEncoder.encode(address(artist.toBase58())),
+		],
+	});
+
+	return new PublicKey(listingPDA);
+}
+
 export async function getCollectionMintPDA(
 	collectionType: "avatar" | "accessory",
 	config: PublicKey

@@ -6,16 +6,16 @@ import { Program } from "@coral-xyz/anchor";
 import { Shapely } from "../target/types/shapely";
 import {
 	ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-	getTokenMetadataAddress,
 	SYSTEM_PROGRAM_ADDRESS,
 	TOKEN_METADATA_PROGRAM_ADDRESS,
 	TOKEN_PROGRAM_ADDRESS,
 } from "gill/programs";
 import {
-	Keypair,
 	ComputeBudgetProgram,
-	Transaction,
+	Keypair,
+	LAMPORTS_PER_SOL,
 	PublicKey,
+	Transaction,
 } from "@solana/web3.js";
 
 import {
@@ -24,6 +24,7 @@ import {
 	getAvatarMintPDA,
 	getCollectionMintPDA,
 	getConfigPDA,
+	getListingPDA,
 	getMasterEdition,
 	getMetadataAccount,
 	getTreasuryPDA,
@@ -61,13 +62,17 @@ describe("Shapely", () => {
 
 	let artistAccessoryAta: PublicKey;
 	let collectorAvatarAta: PublicKey;
+	let listing: PublicKey;
+	let listingAccessoryAta: PublicKey;
 
 	const configSeed = Math.floor(Math.random() * 10_000_000_000);
 	const fee = 150; // 1.5%
+
 	const avatarName = "AVATAR-#001";
+	const avatarURI = "https://www.jsonkeeper.com/b/98WJO";
+
 	const accessoryName = "ACCESSORY-#001";
 	const accessoryURI = "https://www.jsonkeeper.com/b/QOVHK";
-	const avatarURI = "https://www.jsonkeeper.com/b/98WJO";
 
 	before(async () => {
 		payer = await generateAndAirdropSigner(provider.connection);
@@ -107,6 +112,11 @@ describe("Shapely", () => {
 			accessoryMint.publicKey,
 			artist.publicKey
 		);
+		listing = await getListingPDA(
+			accessoryMint.publicKey,
+			artist.publicKey
+		);
+		listingAccessoryAta = await getATA(accessoryMint.publicKey, listing);
 		collectorAvatarAta = await getATA(avatarMint, collector.publicKey);
 	});
 
@@ -227,6 +237,68 @@ describe("Shapely", () => {
 			);
 
 		const sig = await provider.sendAndConfirm(tx, [collector]);
+
+		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
+	});
+
+	it("Should list an accessory", async () => {
+		const accessoryPrice = 0.01 * LAMPORTS_PER_SOL;
+
+		const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+			units: 400_000,
+		});
+		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+			microLamports: 1,
+		});
+
+		console.log({
+			artist: artist.publicKey,
+			artistAccessoryAta,
+
+			config,
+			listing,
+			listingAccessoryAta,
+
+			accessoryMint: accessoryMint.publicKey,
+			accessoryMetadata,
+			accessoryCollection,
+			accessoryMasterEdition,
+
+			metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
+			tokenProgram: TOKEN_PROGRAM_ADDRESS,
+			associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+			systemProgram: SYSTEM_PROGRAM_ADDRESS,
+		});
+
+		const tx = new Transaction()
+			.add(modifyComputeUnits)
+			.add(addPriorityFee)
+			.add(
+				await program.methods
+					.listAccessory(new BN(accessoryPrice))
+					.accountsStrict({
+						artist: artist.publicKey,
+						artistAccessoryAta,
+
+						config,
+						listing,
+						listingAccessoryAta,
+
+						accessoryMint: accessoryMint.publicKey,
+						accessoryMetadata,
+						accessoryCollection,
+						accessoryMasterEdition,
+
+						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
+						tokenProgram: TOKEN_PROGRAM_ADDRESS,
+						associatedTokenProgram:
+							ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+						systemProgram: SYSTEM_PROGRAM_ADDRESS,
+					})
+					.instruction()
+			);
+
+		const sig = await provider.sendAndConfirm(tx, [artist]);
 
 		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
 	});
