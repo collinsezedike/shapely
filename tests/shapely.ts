@@ -74,6 +74,8 @@ describe("Shapely", () => {
 	const accessoryName = "ACCESSORY-#001";
 	const accessoryURI = "https://www.jsonkeeper.com/b/QOVHK";
 
+	const INSTRUCTION_SYSVAR = "Sysvar1nstructions1111111111111111111111111";
+
 	before(async () => {
 		payer = await generateAndAirdropSigner(provider.connection);
 		artist = await generateAndAirdropSigner(provider.connection);
@@ -185,8 +187,12 @@ describe("Shapely", () => {
 
 						accessoryMint: accessoryMint.publicKey,
 						accessoryMetadata,
-						accessoryCollection,
 						accessoryMasterEdition,
+						accessoryCollection,
+						accessoryCollectionMetadata,
+						accessoryCollectionMasterEdition,
+
+						sysvarInstruction: INSTRUCTION_SYSVAR,
 
 						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
 						tokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -249,25 +255,6 @@ describe("Shapely", () => {
 		});
 		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
 			microLamports: 1,
-		});
-
-		console.log({
-			artist: artist.publicKey,
-			artistAccessoryAta,
-
-			config,
-			listing,
-			listingAccessoryAta,
-
-			accessoryMint: accessoryMint.publicKey,
-			accessoryMetadata,
-			accessoryCollection,
-			accessoryMasterEdition,
-
-			metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
-			tokenProgram: TOKEN_PROGRAM_ADDRESS,
-			associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-			systemProgram: SYSTEM_PROGRAM_ADDRESS,
 		});
 
 		const tx = new Transaction()
