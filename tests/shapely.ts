@@ -60,10 +60,11 @@ describe("Shapely", () => {
 	let accessoryCollectionMetadata: PublicKey;
 	let accessoryCollectionMasterEdition: PublicKey;
 
-	let artistAccessoryAta: PublicKey;
-	let collectorAvatarAta: PublicKey;
 	let listing: PublicKey;
 	let listingVault: PublicKey;
+	let artistAccessoryAta: PublicKey;
+	let collectorAvatarAta: PublicKey;
+	let collectorAccessoryAta: PublicKey;
 
 	const configSeed = Math.floor(Math.random() * 10_000_000_000);
 	const fee = 150; // 1.5%
@@ -108,16 +109,20 @@ describe("Shapely", () => {
 			accessoryMint.publicKey
 		);
 
-		artistAccessoryAta = await getATA(
-			accessoryMint.publicKey,
-			artist.publicKey
-		);
 		listing = await getListingPDA(
 			accessoryMint.publicKey,
 			artist.publicKey
 		);
 		listingVault = await getATA(accessoryMint.publicKey, listing);
+		artistAccessoryAta = await getATA(
+			accessoryMint.publicKey,
+			artist.publicKey
+		);
 		collectorAvatarAta = await getATA(avatarMint, collector.publicKey);
+		collectorAccessoryAta = await getATA(
+			accessoryMint.publicKey,
+			collector.publicKey
+		);
 	});
 
 	it("Should initialize the avatar and accessory collection", async () => {
@@ -294,6 +299,66 @@ describe("Shapely", () => {
 		);
 
 		const sig = await provider.sendAndConfirm(tx, [artist]);
+
+		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
+	});
+
+	it("Should relist an accessory", async () => {
+		const accessoryPrice = 0.01 * LAMPORTS_PER_SOL;
+
+		const tx = new Transaction().add(
+			await program.methods
+				.listAccessory(new BN(accessoryPrice))
+				.accountsStrict({
+					artist: artist.publicKey,
+					artistAccessoryAta,
+
+					config,
+					listing,
+					listingVault,
+
+					accessoryMint: accessoryMint.publicKey,
+					accessoryMetadata,
+					accessoryCollection,
+					accessoryMasterEdition,
+
+					metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
+					tokenProgram: TOKEN_PROGRAM_ADDRESS,
+					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+					systemProgram: SYSTEM_PROGRAM_ADDRESS,
+				})
+				.instruction()
+		);
+
+		const sig = await provider.sendAndConfirm(tx, [artist]);
+
+		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
+	});
+
+	it("Should buy a listed accessory", async () => {
+		const tx = new Transaction().add(
+			await program.methods
+				.buyAccessory()
+				.accountsStrict({
+					collector: collector.publicKey,
+					collectorAccessoryAta,
+
+					config,
+					treasury,
+					listing,
+					listingVault,
+
+					artist: artist.publicKey,
+					accessoryMint: accessoryMint.publicKey,
+
+					tokenProgram: TOKEN_PROGRAM_ADDRESS,
+					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+					systemProgram: SYSTEM_PROGRAM_ADDRESS,
+				})
+				.instruction()
+		);
+
+		const sig = await provider.sendAndConfirm(tx, [collector]);
 
 		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
 	});

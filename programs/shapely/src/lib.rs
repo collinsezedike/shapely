@@ -34,4 +34,8 @@ pub mod shapely {
     pub fn delist_accessory(ctx: Context<DelistAccessory>) -> Result<()> {
         ctx.accounts.delist_accessory()
     }
+
+    pub fn buy_accessory(ctx: Context<BuyAccessory>) -> Result<()> {
+        ctx.accounts.buy_accessory()
+    }
 }
