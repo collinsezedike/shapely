@@ -30,4 +30,8 @@ pub mod shapely {
     pub fn list_accessory(ctx: Context<ListAccessory>, price: u64) -> Result<()> {
         ctx.accounts.list_accessory(price, &ctx.bumps)
     }
+
+    pub fn delist_accessory(ctx: Context<DelistAccessory>) -> Result<()> {
+        ctx.accounts.delist_accessory()
+    }
 }

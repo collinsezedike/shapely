@@ -1,11 +1,14 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    metadata::{ MasterEditionAccount, Metadata, MetadataAccount },
-    token::{ transfer_checked, Mint, Token, TokenAccount, TransferChecked },
+    metadata::{MasterEditionAccount, Metadata, MetadataAccount},
+    token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
 
-use crate::{ error::ShapelyError, state::{ Config, Listing } };
+use crate::{
+    error::ShapelyError,
+    state::{Config, Listing},
+};
 
 #[derive(Accounts)]
 pub struct ListAccessory<'info> {
@@ -67,12 +70,12 @@ pub struct ListAccessory<'info> {
     pub listing: Account<'info, Listing>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = artist,
         associated_token::mint = accessory_mint,
         associated_token::authority = listing
     )]
-    pub listing_accessory_ata: Account<'info, TokenAccount>,
+    pub listing_vault: Account<'info, TokenAccount>,
 
     #[account(seeds = [b"config", config.seed.to_le_bytes().as_ref()], bump = config.bump)]
     pub config: Account<'info, Config>,
@@ -109,13 +112,17 @@ impl<'info> ListAccessory<'info> {
         let cpi_accounts = TransferChecked {
             from: self.artist_accessory_ata.to_account_info(),
             mint: self.accessory_mint.to_account_info(),
-            to: self.listing_accessory_ata.to_account_info(),
+            to: self.listing_vault.to_account_info(),
             authority: self.artist.to_account_info(),
         };
 
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
-        transfer_checked(cpi_ctx, self.artist_accessory_ata.amount, self.accessory_mint.decimals)?;
+        transfer_checked(
+            cpi_ctx,
+            self.artist_accessory_ata.amount,
+            self.accessory_mint.decimals,
+        )?;
 
         Ok(())
     }

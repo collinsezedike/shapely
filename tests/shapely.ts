@@ -63,7 +63,7 @@ describe("Shapely", () => {
 	let artistAccessoryAta: PublicKey;
 	let collectorAvatarAta: PublicKey;
 	let listing: PublicKey;
-	let listingAccessoryAta: PublicKey;
+	let listingVault: PublicKey;
 
 	const configSeed = Math.floor(Math.random() * 10_000_000_000);
 	const fee = 150; // 1.5%
@@ -116,7 +116,7 @@ describe("Shapely", () => {
 			accessoryMint.publicKey,
 			artist.publicKey
 		);
-		listingAccessoryAta = await getATA(accessoryMint.publicKey, listing);
+		listingVault = await getATA(accessoryMint.publicKey, listing);
 		collectorAvatarAta = await getATA(avatarMint, collector.publicKey);
 	});
 
@@ -244,59 +244,54 @@ describe("Shapely", () => {
 	it("Should list an accessory", async () => {
 		const accessoryPrice = 0.01 * LAMPORTS_PER_SOL;
 
-		const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-			units: 400_000,
-		});
-		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-			microLamports: 1,
-		});
+		const tx = new Transaction().add(
+			await program.methods
+				.listAccessory(new BN(accessoryPrice))
+				.accountsStrict({
+					artist: artist.publicKey,
+					artistAccessoryAta,
 
-		console.log({
-			artist: artist.publicKey,
-			artistAccessoryAta,
+					config,
+					listing,
+					listingVault,
 
-			config,
-			listing,
-			listingAccessoryAta,
+					accessoryMint: accessoryMint.publicKey,
+					accessoryMetadata,
+					accessoryCollection,
+					accessoryMasterEdition,
 
-			accessoryMint: accessoryMint.publicKey,
-			accessoryMetadata,
-			accessoryCollection,
-			accessoryMasterEdition,
+					metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
+					tokenProgram: TOKEN_PROGRAM_ADDRESS,
+					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+					systemProgram: SYSTEM_PROGRAM_ADDRESS,
+				})
+				.instruction()
+		);
 
-			metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
-			tokenProgram: TOKEN_PROGRAM_ADDRESS,
-			associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-			systemProgram: SYSTEM_PROGRAM_ADDRESS,
-		});
+		const sig = await provider.sendAndConfirm(tx, [artist]);
 
-		const tx = new Transaction()
-			.add(modifyComputeUnits)
-			.add(addPriorityFee)
-			.add(
-				await program.methods
-					.listAccessory(new BN(accessoryPrice))
-					.accountsStrict({
-						artist: artist.publicKey,
-						artistAccessoryAta,
+		console.log(`https://solscan.io/tx/${sig}?cluster=devnet`);
+	});
 
-						config,
-						listing,
-						listingAccessoryAta,
+	it("Should delist an accessory", async () => {
+		const tx = new Transaction().add(
+			await program.methods
+				.delistAccessory()
+				.accountsStrict({
+					artist: artist.publicKey,
+					artistAccessoryAta,
 
-						accessoryMint: accessoryMint.publicKey,
-						accessoryMetadata,
-						accessoryCollection,
-						accessoryMasterEdition,
+					config,
+					listing,
+					listingVault,
 
-						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
-						tokenProgram: TOKEN_PROGRAM_ADDRESS,
-						associatedTokenProgram:
-							ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-						systemProgram: SYSTEM_PROGRAM_ADDRESS,
-					})
-					.instruction()
-			);
+					accessoryMint: accessoryMint.publicKey,
+
+					tokenProgram: TOKEN_PROGRAM_ADDRESS,
+					systemProgram: SYSTEM_PROGRAM_ADDRESS,
+				})
+				.instruction()
+		);
 
 		const sig = await provider.sendAndConfirm(tx, [artist]);
 
