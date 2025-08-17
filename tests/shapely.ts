@@ -362,6 +362,8 @@ describe("Shapely", () => {
 				.buyAccessory()
 				.accountsStrict({
 					collector: collector.publicKey,
+					collectorAvatarMint: avatarMint,
+					collectorAvatarMetadata: avatarMetadata,
 					collectorAccessoryAta,
 
 					config,
@@ -374,6 +376,7 @@ describe("Shapely", () => {
 
 					tokenProgram: TOKEN_PROGRAM_ADDRESS,
 					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+					metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
 					systemProgram: SYSTEM_PROGRAM_ADDRESS,
 				})
 				.instruction()
