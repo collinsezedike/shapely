@@ -42,9 +42,9 @@ pub struct ListAccessory<'info> {
         bump,
         seeds::program = metadata_program.key(),
 
-        constraint = accessory_metadata.collection.as_ref().unwrap().verified == true,
+        constraint = accessory_metadata.collection.as_ref().unwrap().verified == true @ ShapelyError::AccessoryNotVerified,
         constraint = accessory_metadata.collection.as_ref().unwrap().key.as_ref() ==
-        accessory_collection.key().as_ref()
+        accessory_collection.key().as_ref() @ ShapelyError::AccessoryNotVerified
     )]
     pub accessory_metadata: Account<'info, MetadataAccount>,
 
