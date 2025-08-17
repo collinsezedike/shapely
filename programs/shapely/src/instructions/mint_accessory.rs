@@ -4,21 +4,18 @@ use anchor_spl::{
     metadata::{
         mpl_token_metadata::{
             instructions::{
-                CreateMasterEditionV3Cpi,
-                CreateMasterEditionV3CpiAccounts,
-                CreateMasterEditionV3InstructionArgs,
-                CreateMetadataAccountV3Cpi,
-                CreateMetadataAccountV3CpiAccounts,
-                CreateMetadataAccountV3InstructionArgs,
+                CreateMasterEditionV3Cpi, CreateMasterEditionV3CpiAccounts,
+                CreateMasterEditionV3InstructionArgs, CreateMetadataAccountV3Cpi,
+                CreateMetadataAccountV3CpiAccounts, CreateMetadataAccountV3InstructionArgs,
             },
-            types::{ CollectionDetails, Creator, DataV2 },
+            types::{CollectionDetails, Creator, DataV2},
         },
         Metadata,
     },
-    token::{ mint_to, Mint, MintTo, Token, TokenAccount },
+    token::{mint_to, Mint, MintTo, Token, TokenAccount},
 };
 
-use crate::{ error::ShapelyError, state::Config };
+use crate::{error::ShapelyError, state::Config};
 
 #[derive(Accounts)]
 #[instruction(name: String)]
@@ -29,8 +26,6 @@ pub struct MintAccessory<'info> {
     #[account(
         init,
         payer = artist,
-        seeds = [b"accessory", name.as_bytes(), accessory_collection.key().as_ref()],
-        bump,
         mint::decimals = 0,
         mint::authority = config,
         mint::freeze_authority = config
@@ -127,7 +122,7 @@ impl<'info> MintAccessory<'info> {
         &mut self,
         name: String,
         uri: String,
-        signer_seeds: &[&[&[u8]]]
+        signer_seeds: &[&[&[u8]]],
     ) -> Result<()> {
         let metadata = &self.accessory_metadata.to_account_info();
         let mint = &self.accessory_mint.to_account_info();
@@ -165,7 +160,7 @@ impl<'info> MintAccessory<'info> {
                 },
                 is_mutable: true,
                 collection_details: Some(CollectionDetails::V1 { size: 0 }),
-            }
+            },
         );
         metadata_account.invoke_signed(signer_seeds)?;
 
@@ -197,7 +192,7 @@ impl<'info> MintAccessory<'info> {
             },
             CreateMasterEditionV3InstructionArgs {
                 max_supply: Some(0),
-            }
+            },
         );
         master_edition_account.invoke_signed(signer_seeds)?;
 
