@@ -9,7 +9,8 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX");
+// declare_id!("9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX");     // For localnet
+declare_id!("3ccHCxQuyua3zePL3t9Nu7p4CR27CaKasSctiA8Zh1sb");    // For devnet
 
 #[program]
 pub mod shapely {

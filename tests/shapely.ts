@@ -30,6 +30,9 @@ import {
 	getTreasuryPDA,
 } from "./helpers";
 
+import wallet1 from "/home/collins/.config/solana/id.json";
+import wallet2 from "../test-wallet.json";
+
 describe("Shapely", () => {
 	const provider = anchor.AnchorProvider.env();
 
@@ -76,9 +79,12 @@ describe("Shapely", () => {
 	const accessoryURI = "https://www.jsonkeeper.com/b/QOVHK";
 
 	before(async () => {
-		payer = await generateAndAirdropSigner(provider.connection);
-		artist = await generateAndAirdropSigner(provider.connection);
-		collector = await generateAndAirdropSigner(provider.connection);
+		// payer = await generateAndAirdropSigner(provider.connection);
+		// artist = await generateAndAirdropSigner(provider.connection);
+		// collector = await generateAndAirdropSigner(provider.connection);
+		payer = Keypair.fromSecretKey(Uint8Array.from(wallet1));
+		artist = Keypair.fromSecretKey(Uint8Array.from(wallet1));
+		collector = Keypair.fromSecretKey(Uint8Array.from(wallet2));
 
 		config = await getConfigPDA(configSeed);
 		treasury = await getTreasuryPDA(config);

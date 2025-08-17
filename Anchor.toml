@@ -5,24 +5,20 @@ package_manager = "yarn"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-shapely = "9PgEiZqE6d9CxAUY7gF9Tn2mXeySnJPnUkMhRAnxwskX"
+[programs.devnet]
+shapely = "3ccHCxQuyua3zePL3t9Nu7p4CR27CaKasSctiA8Zh1sb"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn tsx --test tests/*.ts"
 
 [test]
-startup_wait = 60000  # Wait up to 60 seconds for validator to start   
-
-[test.validator]
-url = "https://api.mainnet-beta.solana.com"
-
-[[test.validator.clone]]
-address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+startup_wait = 60000
+shutdown_wait = 2000
+upgradeable = false
