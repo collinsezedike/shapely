@@ -42,9 +42,9 @@ pub struct ListAccessory<'info> {
         bump,
         seeds::program = metadata_program.key(),
 
-        // constraint = accessory_metadata.collection.as_ref().unwrap().verified == true,
-        // constraint = accessory_metadata.collection.as_ref().unwrap().key.as_ref() ==
-        // accessory_collection.key().as_ref()
+        constraint = accessory_metadata.collection.as_ref().unwrap().verified == true,
+        constraint = accessory_metadata.collection.as_ref().unwrap().key.as_ref() ==
+        accessory_collection.key().as_ref()
     )]
     pub accessory_metadata: Account<'info, MetadataAccount>,
 

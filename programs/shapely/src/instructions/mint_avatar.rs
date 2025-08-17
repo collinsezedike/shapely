@@ -1,4 +1,6 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{
+    prelude::*, solana_program::sysvar::instructions::ID as INSTRUCTIONS_SYSVAR_PROGRAM_ID,
+};
 use anchor_spl::{
     associated_token::AssociatedToken,
     metadata::{
@@ -7,10 +9,11 @@ use anchor_spl::{
                 CreateMasterEditionV3Cpi, CreateMasterEditionV3CpiAccounts,
                 CreateMasterEditionV3InstructionArgs, CreateMetadataAccountV3Cpi,
                 CreateMetadataAccountV3CpiAccounts, CreateMetadataAccountV3InstructionArgs,
+                VerifyCollectionV1Cpi, VerifyCollectionV1CpiAccounts,
             },
-            types::{CollectionDetails, Creator, DataV2},
+            types::{Collection, Creator, DataV2},
         },
-        Metadata,
+        MasterEditionAccount, Metadata, MetadataAccount,
     },
     token::{mint_to, Mint, MintTo, Token, TokenAccount},
 };
@@ -43,14 +46,6 @@ pub struct MintAvatar<'info> {
 
     #[account(
         mut,
-        seeds = ["avatar collection".as_bytes(), config.key().as_ref()],
-        bump = config.avatar_collection_bump,
-        constraint = avatar_collection.key() == config.avatar_collection.key() @ ShapelyError::InvalidCollectionMint
-    )]
-    pub avatar_collection: Account<'info, Mint>,
-
-    #[account(
-        mut,
         seeds = [
             b"metadata".as_ref(),
             metadata_program.key().as_ref(),
@@ -76,8 +71,25 @@ pub struct MintAvatar<'info> {
     /// CHECK: This avatar mint master edition account
     pub avatar_master_edition: UncheckedAccount<'info>,
 
+    #[account(
+        mut,
+        seeds = ["avatar collection".as_bytes(), config.key().as_ref()],
+        bump = config.avatar_collection_bump,
+        constraint = avatar_collection.key() == config.avatar_collection.key() @ ShapelyError::InvalidCollectionMint
+    )]
+    pub avatar_collection: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub avatar_collection_metadata: Account<'info, MetadataAccount>,
+
+    pub avatar_collection_master_edition: Account<'info, MasterEditionAccount>,
+
     #[account(seeds = [b"config", config.seed.to_le_bytes().as_ref()], bump = config.bump)]
     pub config: Account<'info, Config>,
+
+    #[account(address = INSTRUCTIONS_SYSVAR_PROGRAM_ID)]
+    /// CHECK: Sysvar instruction account that is being checked with an address constraint
+    pub sysvar_instruction: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token>,
 
@@ -99,6 +111,8 @@ impl<'info> MintAvatar<'info> {
         self.create_avatar_metadata(name, uri, signer_seeds)?;
 
         self.create_avatar_master_edition(signer_seeds)?;
+
+        self.verify_avatar_in_collection(signer_seeds)?;
 
         Ok(())
     }
@@ -156,11 +170,14 @@ impl<'info> MintAvatar<'info> {
                     uri,
                     seller_fee_basis_points: 0,
                     creators: Some(creator),
-                    collection: None,
+                    collection: Some(Collection {
+                        verified: false,
+                        key: self.avatar_collection.key(),
+                    }),
                     uses: None,
                 },
                 is_mutable: true,
-                collection_details: Some(CollectionDetails::V1 { size: 0 }),
+                collection_details: None,
             },
         );
         metadata_account.invoke_signed(signer_seeds)?;
@@ -196,6 +213,36 @@ impl<'info> MintAvatar<'info> {
             },
         );
         master_edition_account.invoke_signed(signer_seeds)?;
+
+        Ok(())
+    }
+
+    pub fn verify_avatar_in_collection(&mut self, signer_seeds: &[&[&[u8]]]) -> Result<()> {
+        let metadata = &self.avatar_metadata.to_account_info();
+        let authority = &self.config.to_account_info();
+        let collection_mint = &self.avatar_collection.to_account_info();
+        let collection_metadata = &self.avatar_collection_metadata.to_account_info();
+        let collection_master_edition = &self.avatar_collection_master_edition.to_account_info();
+        let system_program = &self.system_program.to_account_info();
+        let sysvar_instructions = &self.sysvar_instruction.to_account_info();
+        let metadata_program = &self.metadata_program.to_account_info();
+
+        let verify_collection = VerifyCollectionV1Cpi::new(
+            metadata_program,
+            VerifyCollectionV1CpiAccounts {
+                authority,
+                delegate_record: None,
+                metadata,
+                collection_mint,
+                collection_metadata: Some(collection_metadata),
+                collection_master_edition: Some(collection_master_edition),
+                system_program,
+                sysvar_instructions,
+            },
+        );
+        verify_collection.invoke_signed(signer_seeds)?;
+
+        msg!("Collection Verified!");
 
         Ok(())
     }
