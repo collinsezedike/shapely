@@ -30,6 +30,10 @@ import {
 	getTreasuryPDA,
 } from "./helpers";
 
+import payerWallet from "../payer-wallet.json";
+import artistWallet from "../artist-wallet.json";
+import collectorWallet from "../collector-wallet.json";
+
 describe("Shapely", () => {
 	const provider = anchor.AnchorProvider.env();
 
@@ -76,9 +80,15 @@ describe("Shapely", () => {
 	const accessoryURI = "https://www.jsonkeeper.com/b/QOVHK";
 
 	before(async () => {
-		payer = await generateAndAirdropSigner(provider.connection);
-		artist = await generateAndAirdropSigner(provider.connection);
-		collector = await generateAndAirdropSigner(provider.connection);
+		// For localnet
+		// payer = await generateAndAirdropSigner(provider.connection);
+		// artist = await generateAndAirdropSigner(provider.connection);
+		// collector = await generateAndAirdropSigner(provider.connection);
+
+		// For devnet
+		payer = Keypair.fromSecretKey(Uint8Array.from(payerWallet));
+		artist = Keypair.fromSecretKey(Uint8Array.from(artistWallet));
+		collector = Keypair.fromSecretKey(Uint8Array.from(collectorWallet));
 
 		config = await getConfigPDA(configSeed);
 		treasury = await getTreasuryPDA(config);
@@ -190,8 +200,14 @@ describe("Shapely", () => {
 
 						accessoryMint: accessoryMint.publicKey,
 						accessoryMetadata,
-						accessoryCollection,
 						accessoryMasterEdition,
+
+						accessoryCollection,
+						accessoryCollectionMetadata,
+						accessoryCollectionMasterEdition,
+
+						sysvarInstruction:
+							anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
 
 						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
 						tokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -229,8 +245,14 @@ describe("Shapely", () => {
 
 						avatarMint,
 						avatarMetadata,
-						avatarCollection,
 						avatarMasterEdition,
+
+						avatarCollection,
+						avatarCollectionMetadata,
+						avatarCollectionMasterEdition,
+
+						sysvarInstruction:
+							anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
 
 						metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
 						tokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -341,6 +363,8 @@ describe("Shapely", () => {
 				.buyAccessory()
 				.accountsStrict({
 					collector: collector.publicKey,
+					collectorAvatarMint: avatarMint,
+					collectorAvatarMetadata: avatarMetadata,
 					collectorAccessoryAta,
 
 					config,
@@ -353,6 +377,7 @@ describe("Shapely", () => {
 
 					tokenProgram: TOKEN_PROGRAM_ADDRESS,
 					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+					metadataProgram: TOKEN_METADATA_PROGRAM_ADDRESS,
 					systemProgram: SYSTEM_PROGRAM_ADDRESS,
 				})
 				.instruction()

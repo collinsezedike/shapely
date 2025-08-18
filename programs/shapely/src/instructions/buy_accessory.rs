@@ -4,17 +4,42 @@ use anchor_lang::{
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
+    metadata::{Metadata, MetadataAccount},
     token::{
         close_account, transfer_checked, CloseAccount, Mint, Token, TokenAccount, TransferChecked,
     },
 };
 
-use crate::state::{Config, Listing};
+use crate::{
+    error::ShapelyError,
+    state::{Config, Listing},
+};
 
 #[derive(Accounts)]
 pub struct BuyAccessory<'info> {
     #[account(mut)]
     pub collector: Signer<'info>,
+
+    #[account(
+        seeds = [b"avatar", collector.key().as_ref(), config.avatar_collection.key().as_ref()],
+        bump,
+    )]
+    pub collector_avatar_mint: Account<'info, Mint>,
+
+    #[account(
+        seeds = [
+            b"metadata".as_ref(),
+            metadata_program.key().as_ref(),
+            collector_avatar_mint.key().as_ref(),
+        ],
+        bump,
+        seeds::program = metadata_program.key(),
+
+        constraint = collector_avatar_metadata.collection.as_ref().unwrap().verified == true @ ShapelyError::AvatarNotVerified,
+        constraint = collector_avatar_metadata.collection.as_ref().unwrap().key.as_ref() ==
+        config.avatar_collection.key().as_ref() @ ShapelyError::AvatarNotVerified
+    )]
+    pub collector_avatar_metadata: Account<'info, MetadataAccount>,
 
     #[account(mut)]
     /// CHECK: This will be validated in the listing seeds
@@ -54,6 +79,8 @@ pub struct BuyAccessory<'info> {
     pub token_program: Program<'info, Token>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
+
+    pub metadata_program: Program<'info, Metadata>,
 
     pub system_program: Program<'info, System>,
 }
