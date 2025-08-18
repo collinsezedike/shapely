@@ -30,8 +30,9 @@ import {
 	getTreasuryPDA,
 } from "./helpers";
 
-// import wallet1 from "/home/collins/.config/solana/id.json";
-// import wallet2 from "../test-wallet.json";
+import payerWallet from "../payer-wallet.json";
+import artistWallet from "../artist-wallet.json";
+import collectorWallet from "../collector-wallet.json";
 
 describe("Shapely", () => {
 	const provider = anchor.AnchorProvider.env();
@@ -80,14 +81,14 @@ describe("Shapely", () => {
 
 	before(async () => {
 		// For localnet
-		payer = await generateAndAirdropSigner(provider.connection);
-		artist = await generateAndAirdropSigner(provider.connection);
-		collector = await generateAndAirdropSigner(provider.connection);
+		// payer = await generateAndAirdropSigner(provider.connection);
+		// artist = await generateAndAirdropSigner(provider.connection);
+		// collector = await generateAndAirdropSigner(provider.connection);
 
 		// For devnet
-		// payer = Keypair.fromSecretKey(Uint8Array.from(wallet1));
-		// artist = Keypair.fromSecretKey(Uint8Array.from(wallet1));
-		// collector = Keypair.fromSecretKey(Uint8Array.from(wallet2));
+		payer = Keypair.fromSecretKey(Uint8Array.from(payerWallet));
+		artist = Keypair.fromSecretKey(Uint8Array.from(artistWallet));
+		collector = Keypair.fromSecretKey(Uint8Array.from(collectorWallet));
 
 		config = await getConfigPDA(configSeed);
 		treasury = await getTreasuryPDA(config);
